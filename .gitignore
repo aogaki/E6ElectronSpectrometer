@@ -4,4 +4,8 @@ cmake_install.cmake
 tenGeVmagnet
 Makefile
 *.root
-*.wrl
+*.jpg
+*.pdf
+E6ES
+G4History.macro
+
