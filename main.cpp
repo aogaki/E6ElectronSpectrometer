@@ -36,7 +36,8 @@ namespace {
    {
       G4cerr << " Usage: " << G4endl;
       G4cerr << " ./E6ES [-m macro filename]\n"
-             << " -a show all particles [default only e-] \n"
+             << " -a show all particles. default only e-\n"
+             << " -e [kinetic energy in GeV] Using mono-energetic beam \n"
              << G4endl;
    }
 }
@@ -66,15 +67,23 @@ int main(int argc, char **argv)
 {
    G4String macro = "";
    G4bool showAll = false;
+   G4bool useMonoEne = false;
+   G4double beamEne = 9.;
    for (G4int i = 1; i < argc; i++) {
-      if (G4String(argv[i]) == "-m") macro = argv[++i];
-      else if (G4String(argv[i]) == "-a") showAll = true;
+      if (G4String(argv[i]) == "-m")
+         macro = argv[++i];
+      else if (G4String(argv[i]) == "-a")
+         showAll = true;
+      else if (G4String(argv[i]) == "-e"){
+         useMonoEne = true;
+         beamEne = std::stod(argv[++i]);
+      }
       else {
          PrintUsage();
          return 1;
       }
    }
-
+   
    // Remove?
    // Choose the Random engine
    CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
@@ -108,7 +117,7 @@ int main(int argc, char **argv)
    runManager->SetUserInitialization(physicsList);
 
    // Primary generator action and User action intialization
-   runManager->SetUserInitialization(new ESActionInitialization());
+   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne));
 
    // Initialize G4 kernel
    //
@@ -116,11 +125,11 @@ int main(int argc, char **argv)
 
 #ifdef G4VIS_USE
    // Initialize visualization
-   G4VisManager *visManager = new G4VisExecutive;
+   G4VisManager *visManager = new G4VisExecutive();
    visManager->Initialize();
 
    if (!showAll) { //Show only electron
-      G4TrajectoryParticleFilter *filterp = new G4TrajectoryParticleFilter;
+      G4TrajectoryParticleFilter *filterp = new G4TrajectoryParticleFilter();
       filterp->Add("e-");
       visManager->RegisterModel(filterp);
    }
