@@ -1,3 +1,2 @@
-/ES/Geometry/WindowMaterial G4_POLYCARBONATE
-/ES/Geometry/WindowThickness 10
+/ES/Geometry/WindowMaterial G4_Galactic
 /run/beamOn 1000000

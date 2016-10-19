@@ -2,24 +2,25 @@
 
 nEvents=1000000
 
-echo "/ES/Geometry/WindowMaterial G4_Galactic" > tmp.mac
-echo "/run/beamOn $nEvents" >> tmp.mac
-
-./E6ES -m tmp.mac
-hadd -f noWindow.root result_t*
-
-rm -f tmp.mac
-
-for mat in Acrylic G4_POLYCARBONATE
+for ene in 1 2 3 4 5 6 7 8 9
 do
-    for t in 3 5 10
-    do
-	echo "/ES/Geometry/WindowMaterial $mat" > tmp.mac
-	echo "/ES/Geometry/WindowThickness $t" >> tmp.mac
-	echo "/run/beamOn $nEvents" >> tmp.mac
-	./E6ES -m tmp.mac
-	hadd -f "$mat"T$t.root result_t*
-    done
+    echo "/ES/Geometry/WindowMaterial G4_Galactic" > tmp.mac
+    echo "/run/beamOn $nEvents" >> tmp.mac
+    
+    ./E6ES -m tmp.mac -e $ene
+    hadd -f noWindow"$ene"GeV.root result_t*
+    
+    rm -f tmp.mac
+done
+
+for ene in 1 2 3 4 5 6 7 8 9
+do
+    echo "/run/beamOn $nEvents" > tmp.mac
+    
+    ./E6ES -m tmp.mac -e $ene
+    hadd -f polycarbonate"$ene"GeV.root result_t*
+    
+    rm -f tmp.mac
 done
 
 rm -f result*
