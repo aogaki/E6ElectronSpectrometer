@@ -32,9 +32,17 @@ private:
    G4double fBeamEne;
    G4ThreeVector fParVec;
    
-   G4double fZPosition;
    G4double fThetaMax;
    G4double fCosMax;
+
+   // Commands
+   void DefineCommands();
+   G4GenericMessenger *fMessenger;
+   // Changing z position of source 
+   void SetSourceZ(G4double z);
+   G4double fZPosition;
+   // Do I have to add for theta?
+   
 };
 
 #endif

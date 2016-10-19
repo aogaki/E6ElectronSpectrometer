@@ -30,14 +30,15 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    : G4VUserPrimaryGeneratorAction(),
      fParticleGun(nullptr),
      fUseMonoEne(useMonoEne),
-     fBeamEne(beamEne*GeV)
+     fBeamEne(beamEne*GeV),
+     fMessenger(nullptr)
 {
    G4AutoLock lock(&mutexInPGA);
    
    G4int nPar = 1;
    fParticleGun = new G4ParticleGun(nPar);
 
-   fZPosition = -2500.*mm;
+   fZPosition = -2703.*mm;
    fThetaMax = 1.5*mrad;
    fCosMax = cos(fThetaMax);
    
@@ -51,11 +52,14 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
 
    if(fUseMonoEne) GunFuncPointer = &ESPrimaryGeneratorAction::MonoEneGun;
    else GunFuncPointer = &ESPrimaryGeneratorAction::UniformGun;
+
+   DefineCommands();
 }
 
 ESPrimaryGeneratorAction::~ESPrimaryGeneratorAction()
 {
-   if(fParticleGun != nullptr) {delete fParticleGun; fParticleGun = nullptr;}
+   delete fParticleGun;
+   delete fMessenger;
 }
 
 void ESPrimaryGeneratorAction::MonoEneGun()
@@ -94,4 +98,26 @@ void ESPrimaryGeneratorAction::GeneratePrimaries(G4Event *event)
    if (nEveInPGA++ % 10000 == 0)
       G4cout << nEveInPGA - 1 << " events done" << G4endl;
 
+}
+
+void ESPrimaryGeneratorAction::DefineCommands()
+{
+   fMessenger = new G4GenericMessenger(this, "/ES/Primary/", 
+                                       "Beam control");
+
+   // z position
+   G4GenericMessenger::Command &sourceZCmd
+      = fMessenger->DeclareMethodWithUnit("Z", "mm",
+                                          &ESPrimaryGeneratorAction::SetSourceZ, 
+                                          "Set the length of source.");
+
+   sourceZCmd.SetParameterName("z", true);
+   sourceZCmd.SetRange("z>=-4000. && z<0.");
+   sourceZCmd.SetDefaultValue("-2703");
+}
+
+void ESPrimaryGeneratorAction::SetSourceZ(G4double z)
+{
+   fZPosition = z;
+   fParticleGun->SetParticlePosition(G4ThreeVector(0., 0., fZPosition));
 }

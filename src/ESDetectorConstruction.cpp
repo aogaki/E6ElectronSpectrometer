@@ -44,7 +44,15 @@ ESDetectorConstruction::ESDetectorConstruction()
 }
 
 ESDetectorConstruction::~ESDetectorConstruction()
-{}
+{
+   delete fVacuumMat;
+   delete fWindowMat;
+   delete fAirMat;
+   delete fMessenger;
+   delete fVacuumPV;
+   delete fWindowPV;
+   delete fAirPV;
+}
 
 void ESDetectorConstruction::DefineMaterials()
 {
@@ -75,7 +83,7 @@ void ESDetectorConstruction::DefineMaterials()
 void ESDetectorConstruction::DefineGeometries()
 {
    fAirT = 1.*m;
-   fWindowT = 10.*mm;
+   fWindowT = 3.*mm;
    fVacuumT = 2.*m;
 }
 
@@ -197,6 +205,13 @@ void ESDetectorConstruction::SetWindowT(G4double t)
    }
    
    G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+   // Changing the beam source position
+   G4UImanager *UImanager = G4UImanager::GetUIpointer();
+   G4String command = "/ES/Primary/Z ";
+   // source position <-> window upstream face: 1700 mm
+   G4double zPosition = -(fWindowT + fAirT + 1700.*mm);
+   UImanager->ApplyCommand(command + std::to_string(zPosition));
 }
 
 void ESDetectorConstruction::SetWindowMat(G4String matName)

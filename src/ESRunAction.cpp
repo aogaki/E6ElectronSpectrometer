@@ -11,9 +11,7 @@ ESRunAction::ESRunAction()
 {}
 
 ESRunAction::~ESRunAction()
-{
-   delete G4AnalysisManager::Instance();
-}
+{}
 
 void ESRunAction::BeginOfRunAction(const G4Run *)
 {
