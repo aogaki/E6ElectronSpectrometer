@@ -8,4 +8,4 @@ Makefile
 *.pdf
 E6ES
 G4History.macro
-
+test/

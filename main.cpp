@@ -29,6 +29,7 @@
 #include "ESActionInitialization.hpp"
 #include "ESPrimaryGeneratorAction.hpp"
 #include "ESPhysicsList.hpp"
+#include "ESConstants.hpp"
 
 
 namespace {
@@ -38,6 +39,8 @@ namespace {
       G4cerr << " ./E6ES [-m macro filename]\n"
              << " -a show all particles. default only e-\n"
              << " -e [kinetic energy in GeV] Using mono-energetic beam \n"
+             << " -z zero angle beam \n"
+             << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
              << G4endl;
    }
 }
@@ -68,7 +71,10 @@ int main(int argc, char **argv)
    G4String macro = "";
    G4bool showAll = false;
    G4bool useMonoEne = false;
+   G4bool useZeroAng = false;
    G4double beamEne = 9.;
+   ColliState colliState = ColliState::No;
+   
    for (G4int i = 1; i < argc; i++) {
       if (G4String(argv[i]) == "-m")
          macro = argv[++i];
@@ -77,6 +83,18 @@ int main(int argc, char **argv)
       else if (G4String(argv[i]) == "-e"){
          useMonoEne = true;
          beamEne = std::stod(argv[++i]);
+      }
+      else if (G4String(argv[i]) == "-z")
+         useZeroAng = true;
+      else if (G4String(argv[i]) == "-c"){
+         G4int colliFlag = atoi(argv[++i]);
+         if(colliFlag == 0) colliState = ColliState::No;
+         else if(colliFlag == 1) colliState = ColliState::InAir;
+         else if(colliFlag == 2) colliState = ColliState::InVac;
+         else {
+            PrintUsage();
+            return 1;
+         }
       }
       else {
          PrintUsage();
@@ -105,7 +123,7 @@ int main(int argc, char **argv)
    // Set mandatory initialization classes
    //
    // Detector construction
-   runManager->SetUserInitialization(new ESDetectorConstruction());
+   runManager->SetUserInitialization(new ESDetectorConstruction(colliState));
 
    // Physics list
    //G4VModularPhysicsList *physicsList = new FTFP_BERT();
@@ -117,7 +135,7 @@ int main(int argc, char **argv)
    runManager->SetUserInitialization(physicsList);
 
    // Primary generator action and User action intialization
-   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne));
+   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne, useZeroAng));
 
    // Initialize G4 kernel
    //

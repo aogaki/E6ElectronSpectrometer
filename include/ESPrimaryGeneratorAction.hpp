@@ -17,7 +17,7 @@ class TFile;
 class ESPrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 {
 public:
-   ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne);
+   ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng);
    virtual ~ESPrimaryGeneratorAction();
 
    virtual void GeneratePrimaries(G4Event *);
@@ -27,11 +27,15 @@ private:
 
    void MonoEneGun();
    void UniformGun();
-   void (ESPrimaryGeneratorAction::*GunFuncPointer)();
+   void (ESPrimaryGeneratorAction::*GunPointer)();
    G4bool fUseMonoEne;
    G4double fBeamEne;
-   G4ThreeVector fParVec;
-   
+
+   void ZeroAng();
+   void UniformAng();
+   void (ESPrimaryGeneratorAction::*AngGenPointer)();
+   G4bool fUseZeroAng;
+   G4ThreeVector fParVec;   
    G4double fThetaMax;
    G4double fCosMax;
 

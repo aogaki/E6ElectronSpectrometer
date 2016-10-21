@@ -21,16 +21,19 @@
 #include "G4GenericMessenger.hh"
 
 #include "ESPrimaryGeneratorAction.hpp"
+#include "ESConstants.hpp"
 
 
 static G4int nEveInPGA = 0; // Global variable change to local? 
 G4Mutex mutexInPGA = G4MUTEX_INITIALIZER;
 
-ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne)
+ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne,
+                                                   G4bool useZeroAng)
    : G4VUserPrimaryGeneratorAction(),
      fParticleGun(nullptr),
      fUseMonoEne(useMonoEne),
      fBeamEne(beamEne*GeV),
+     fUseZeroAng(useZeroAng),
      fMessenger(nullptr)
 {
    G4AutoLock lock(&mutexInPGA);
@@ -38,7 +41,7 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    G4int nPar = 1;
    fParticleGun = new G4ParticleGun(nPar);
 
-   fZPosition = -2703.*mm;
+   fZPosition = kSourceZPos;
    fThetaMax = 1.5*mrad;
    fCosMax = cos(fThetaMax);
    
@@ -50,8 +53,11 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    fParticleGun->SetParticleMomentumDirection(fParVec);
    fParticleGun->SetParticleEnergy(fBeamEne);
 
-   if(fUseMonoEne) GunFuncPointer = &ESPrimaryGeneratorAction::MonoEneGun;
-   else GunFuncPointer = &ESPrimaryGeneratorAction::UniformGun;
+   if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
+   else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
+
+   if(fUseZeroAng) AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
+   else AngGenPointer = &ESPrimaryGeneratorAction::UniformAng;
 
    DefineCommands();
 }
@@ -66,20 +72,31 @@ void ESPrimaryGeneratorAction::MonoEneGun()
 {
    // Do nothing
    // Using the parameters set in constructor
+   (this->*AngGenPointer)(); 
+}
+
+void ESPrimaryGeneratorAction::ZeroAng()
+{
+   // Do nothing
+   // Using the parameters set in constructor
 }
 
 void ESPrimaryGeneratorAction::UniformGun()
 {
+   fBeamEne = (G4UniformRand() + 8)*GeV;
+   (this->*AngGenPointer)(); 
+}
+
+void ESPrimaryGeneratorAction::UniformAng()
+{
    G4double theta = acos(1. - G4UniformRand() * (1. - fCosMax));
    G4double phi = G4UniformRand() * 2. * CLHEP::pi;
-   
    fParVec.setRThetaPhi(1., theta, phi);
-   fBeamEne = (G4UniformRand() + 8)*GeV;
 }
 
 void ESPrimaryGeneratorAction::GeneratePrimaries(G4Event *event)
 {
-   (this->*GunFuncPointer)(); 
+   (this->*GunPointer)(); 
    
    fParticleGun->SetParticleMomentumDirection(fParVec);
    fParticleGun->SetParticleEnergy(fBeamEne);
@@ -113,7 +130,7 @@ void ESPrimaryGeneratorAction::DefineCommands()
 
    sourceZCmd.SetParameterName("z", true);
    sourceZCmd.SetRange("z>=-4000. && z<0.");
-   sourceZCmd.SetDefaultValue("-2703");
+   sourceZCmd.SetDefaultValue("-3000");
 }
 
 void ESPrimaryGeneratorAction::SetSourceZ(G4double z)

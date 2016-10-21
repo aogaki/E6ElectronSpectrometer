@@ -15,11 +15,13 @@
 #include "G4LogicalVolume.hh"
 #include "G4GenericMessenger.hh"
 
+#include "ESConstants.hpp"
+
 
 class ESDetectorConstruction : public G4VUserDetectorConstruction
 {
 public:
-   ESDetectorConstruction();
+   ESDetectorConstruction(ColliState colliState);
    virtual ~ESDetectorConstruction();
 
    virtual G4VPhysicalVolume *Construct();
@@ -33,13 +35,19 @@ private:
    G4Material *fVacuumMat;
    G4Material *fWindowMat;
    G4Material *fAirMat;
+   G4Material *fCollimatorMat;
    
    // Geometry parameters
+   // I have to think which variables should be defined in DefineGeometries()
    void DefineGeometries();
    G4double fVacuumT;
    G4double fWindowT;
+   G4double fWindowZPos;
    G4double fAirT;
-
+   ColliState fColliState;
+   G4double fColliT;
+   G4double fColliHole;
+   
    // For command
    void DefineCommands();
    void SetWindowT(G4double t);

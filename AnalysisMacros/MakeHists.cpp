@@ -17,7 +17,7 @@ TH2D *HisPos[3];
 TH2D *HisVec[3];
 
 
-void InitHists()
+void InitHists(Double_t ene = 8.)
 {
    TString title[3]{"Before window", "After window", "After air"};
    for(Int_t i = 0; i < 3; i++){
@@ -33,11 +33,11 @@ void InitHists()
       HisPhi[i]->SetXTitle("#it{#phi} [rad]");
       HisPhi[i]->SetYTitle("No. particles");
 
-      HisEne[i] = new TH1D(Form("HisEne%d", i), title[i], 150000, 0, 15);
+      HisEne[i] = new TH1D(Form("HisEne%d", i), title[i], Int_t(ene) * 20000, 0, ene * 2);
       HisEne[i]->SetXTitle("Kinetic energy [Gev]");
       HisEne[i]->SetYTitle("No. particles");
 
-      HisPos[i] = new TH2D(Form("HisPos%d", i), title[i], 1000, -5., 5., 1000, -5., 5.);
+      HisPos[i] = new TH2D(Form("HisPos%d", i), title[i], 1000, -10., 10., 1000, -10., 10.);
       HisPos[i]->SetXTitle("Position [mm]");
       HisPos[i]->SetYTitle("Position [mm]");
       HisPos[i]->SetZTitle("No. particles");
@@ -83,6 +83,8 @@ void FillHists(TFile *file)
    tree->SetBranchStatus("VolumeName", 1);
    tree->SetBranchAddress("VolumeName", volumeName);
 
+   Int_t exitCounter = 0;
+   
    const Int_t kNoEvents = tree->GetEntries();
    for(Int_t i = 0; i < kNoEvents; i++){
       tree->GetEntry(i);
@@ -100,11 +102,17 @@ void FillHists(TFile *file)
          HisEne[volIndex]->Fill(ene / 1000.);
          HisPos[volIndex]->Fill(pos.x(), pos.y());
          HisVec[volIndex]->Fill(vec.x() / vec.Mag(), vec.y() / vec.Mag());
-
+         if(volIndex == 2 && sqrt(pos.x()*pos.x() + pos.y()*pos.y() < 4.)) exitCounter++;
       }
    }
    
    delete tree;
+
+   ofstream fout("pos.txt");
+   cout << exitCounter << " Electrons reach the magnet" << endl;
+   fout << exitCounter << " Electrons reach the magnet" << endl;
+   fout.close();
+
 }
 
 void FitHists()
@@ -154,12 +162,16 @@ void SaveHists(TString fileName)
    delete recCan;
 }
 
-void CheckEnergyLoss()
+void CheckEnergyLoss(Double_t ene)
 {
    gStyle->SetOptStat(0);
+
+   Int_t center = HisEne[0]->GetXaxis()->GetNbins() / 2;
    
-   Int_t maxBin = 80050;
-   Int_t minBin = 79951;
+   Int_t maxBin = center + 50;
+   Int_t minBin = center - 49;
+
+   cout << center <<"\t"<< maxBin <<"\t"<< minBin << endl;
    
    TCanvas *recCan = new TCanvas("recCan", "");
    recCan->Print("ene.pdf[", "pdf");
@@ -211,6 +223,15 @@ void CheckEnergyLoss()
         << "\nAfter Window:\t" << HisEne[1]->Integral(minBin, maxBin)
         << "\nAfter Air:\t" << HisEne[2]->Integral(minBin, maxBin) << endl;
    fout.close();
+   
+   HisEne[0]->GetXaxis()->UnZoom();
+   HisEne[1]->GetXaxis()->UnZoom();
+   HisEne[2]->GetXaxis()->UnZoom();
+   fout.open("eneMean.txt");
+   fout << "Before Window:\t" << HisEne[0]->GetMean()
+        << "\nAfter Window:\t" << HisEne[1]->GetMean()
+        << "\nAfter Air:\t" << HisEne[2]->GetMean() << endl;
+   fout.close();
 
    delete recCan;
 }
@@ -227,8 +248,8 @@ void CheckScattering()
    HisTheta[2]->SetLineColor(4);
 
    HisTheta[1]->Draw();
-   HisTheta[2]->Draw("SAME");
    HisTheta[0]->Draw("SAME");
+   HisTheta[2]->Draw("SAME");
    
    TLegend *leg1 = new TLegend(0.6, 0.6, 0.9, 0.9);
    leg1->SetTextSize(0.045);
@@ -242,10 +263,10 @@ void CheckScattering()
    recCan->SetGridy();
    recCan->Print("theta.pdf", "pdf");
 
-   HisTheta[1]->GetXaxis()->SetRange(1, 200);
+   HisTheta[1]->GetXaxis()->SetRange(1, 100);
    HisTheta[1]->Draw();
-   HisTheta[2]->Draw("SAME");
    HisTheta[0]->Draw("SAME");
+   HisTheta[2]->Draw("SAME");
    leg1->Draw();
    recCan->Print("theta.pdf", "pdf");
    
@@ -254,8 +275,8 @@ void CheckScattering()
    HisCosTheta[1]->SetLineColor(2);
    HisCosTheta[2]->SetLineColor(4);
 
-   HisCosTheta[1]->Draw();
-   HisCosTheta[2]->Draw("SAME");
+   HisCosTheta[2]->Draw();
+   HisCosTheta[1]->Draw("SAME");
    HisCosTheta[0]->Draw("SAME");
    
    TLegend *leg2 = new TLegend(0.6, 0.6, 0.9, 0.9);
@@ -271,9 +292,9 @@ void CheckScattering()
    recCan->SetLogy();
    recCan->Print("theta.pdf", "pdf");
 
-   HisCosTheta[1]->GetXaxis()->SetRange(951, 1050);
-   HisCosTheta[1]->Draw();
-   HisCosTheta[2]->Draw("SAME");
+   HisCosTheta[2]->GetXaxis()->SetRange(901, 1100);
+   HisCosTheta[2]->Draw();
+   HisCosTheta[1]->Draw("SAME");
    HisCosTheta[0]->Draw("SAME");
    leg2->Draw();
    recCan->SetLogy();
@@ -290,6 +311,8 @@ void CheckPosition()
    
    TCanvas *squCan = new TCanvas("squCan", "", 600, 600);
    HisPos[2]->Draw("COLZ");
+   squCan->SetGridx();
+   squCan->SetGridy();
    squCan->Print("pos.pdf", "pdf");
    
    TAxis *xAxis = HisPos[2]->GetXaxis();
@@ -306,17 +329,15 @@ void CheckPosition()
       }
    }
 
-   ofstream fout("pos.txt");
-   cout << counter << " Electrons reach the magnet" << endl;
-   fout << counter << " Electrons reach the magnet" << endl;
-   fout.close();
-
    delete squCan;
 }
 
-void MakeHists(TString fileName = "noWindow.root")
+void MakeHists(TString fileName = "polycarbonate1GeV.root")
 {
-   InitHists();
+   // Assuming energy is one digit.  Not good.  I will use 10 GeV
+   Double_t ene = atof(&fileName[fileName.Index("GeV") - 1]);
+
+   InitHists(ene);
 
    TFile *file = new TFile(fileName, "OPEN");
    FillHists(file);
@@ -324,7 +345,8 @@ void MakeHists(TString fileName = "noWindow.root")
    file->Close();
    delete file;
 
-   CheckEnergyLoss();
+   CheckEnergyLoss(ene);
    CheckScattering();
    CheckPosition();
+
 }
