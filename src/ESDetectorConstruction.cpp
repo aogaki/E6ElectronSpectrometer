@@ -128,7 +128,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    airLV->SetVisAttributes(visAttributes);
    fVisAttributes.push_back(visAttributes);
 
-   G4double airZPos = fAirT / 2.;
+   G4double airZPos = fAirT / 2. + fWindowZPos + fWindowT / 2.;
    G4ThreeVector airPos = G4ThreeVector(0., 0., airZPos);
    fAirPV = new G4PVPlacement(nullptr, airPos, airLV, "Air", worldLV,
                               false, 0, fCheckOverlap);
@@ -145,23 +145,26 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4ThreeVector windowPos = G4ThreeVector(0., 0., fWindowZPos);
    fWindowPV = new G4PVPlacement(nullptr, windowPos, windowLV, "Window", worldLV,
                                  false, 0, fCheckOverlap);
-      
+
    // detecting layer at entrance of magnet
-   G4double entW = airW;
-   G4double entH = airH;
-   G4double entT = -fWindowZPos - fWindowT / 2.;
-   G4Box *entS = new G4Box("Entrance", entW / 2., entH / 2., entT / 2.);
-   G4LogicalVolume *entLV = new G4LogicalVolume(entS, fAirMat, "Entrance");
+   G4double airDetW = airW;
+   G4double airDetH = airH;
+   //G4double airDetT = -fWindowZPos - fWindowT / 2.;
+   G4double airDetT = 1.*mm;
+   G4Box *airDetS = new G4Box("AirDet", airDetW / 2., airDetH / 2., airDetT / 2.);
+   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, fAirMat, "AirDet");
    visAttributes = new G4VisAttributes(G4Colour::Magenta());
-   entLV->SetVisAttributes(visAttributes);
+   airDetLV->SetVisAttributes(visAttributes);
    fVisAttributes.push_back(visAttributes);
 
-   G4double entZPos = -entT / 2.;
-   G4ThreeVector entPos = G4ThreeVector(0., 0., entZPos);
-   new G4PVPlacement(nullptr, entPos, entLV, "Entrance", worldLV,
-                     false, 0, fCheckOverlap);
-
-
+   for(G4int i = 0; i < 25; i++){
+      G4double airDetZPos = -fAirT / 2. - airDetT / 2. + 100.*(i + 1)*mm;
+      G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
+      G4String name = "AirDet" + std::to_string(i);
+      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, airLV,
+                        false, 0, fCheckOverlap);
+   }
+/*      
    // detecting layer at LANEX position
    G4double lanexW = airW;
    G4double lanexH = 0.01*nm;
@@ -176,7 +179,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4ThreeVector lanexPos = G4ThreeVector(0., lanexYPos, 0.);
    new G4PVPlacement(nullptr, lanexPos, lanexLV, "LANEX", airLV,
                      false, 0, fCheckOverlap);
-
+*/
 
    // Collimator
    if(fColliState != ColliState::No){
@@ -192,12 +195,12 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       fVisAttributes.push_back(visAttributes);
 
       G4double colliZPos;
-      if(fColliState == ColliState::InAir) colliZPos = entT / 2. - fColliT / 2.;
+      if(fColliState == ColliState::InAir) colliZPos = airDetT / 2. - fColliT / 2.;
       else if(fColliState == ColliState::InVac) colliZPos = kSourceZPos + kSourceToColliVac;
       G4ThreeVector colliPos = G4ThreeVector(0., 0., colliZPos);
       
       G4LogicalVolume *colliMotherLV;
-      if(fColliState == ColliState::InAir) colliMotherLV = entLV;
+      if(fColliState == ColliState::InAir) colliMotherLV = airDetLV;
       else if(fColliState == ColliState::InVac) colliMotherLV = worldLV;
       new G4PVPlacement(nullptr, colliPos, colliLV, "Collimator", colliMotherLV,
                         false, 0, fCheckOverlap);
@@ -214,7 +217,7 @@ void ESDetectorConstruction::ConstructSDandField()
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
       //if(lv->GetName() != "World")
-      if(lv->GetName() == "Entrance" || lv->GetName() == "LANEX")
+      if(lv->GetName() != "World" && lv->GetName() != "Air")
          SetSensitiveDetector(lv->GetName(), ExitSD);
    }
 }
