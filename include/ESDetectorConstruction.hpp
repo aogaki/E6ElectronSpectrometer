@@ -14,6 +14,7 @@
 #include "G4VisAttributes.hh"
 #include "G4LogicalVolume.hh"
 #include "G4GenericMessenger.hh"
+#include "G4SystemOfUnits.hh"
 
 #include "ESConstants.hpp"
 
@@ -30,23 +31,38 @@ public:
 private:
    G4bool fCheckOverlap;
 
+   G4LogicalVolume *fMagneticFieldLV;
+   
    // Materials
    void DefineMaterials();
    G4Material *fVacuumMat;
    G4Material *fWindowMat;
    G4Material *fAirMat;
    G4Material *fCollimatorMat;
+   G4Material *fMagnetMat;
    
    // Geometry parameters
    // I have to think which variables should be defined in DefineGeometries()
    void DefineGeometries();
+
    G4double fVacuumT;
    G4double fWindowT;
    G4double fWindowZPos;
+
    G4double fAirT;
+   
    ColliState fColliState;
    G4double fColliT;
    G4double fColliHole;
+
+   G4double fMagnetH;
+   G4double fMagnetW;
+   G4double fMagnetL;
+   G4double fMagnetGap;
+   G4double fMagnetDepth;
+   
+   // Magnet
+   G4LogicalVolume *ConstructMagnet();
    
    // For command
    void DefineCommands();

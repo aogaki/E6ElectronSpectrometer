@@ -2,7 +2,6 @@
 #include <string>
 #include <fstream>
 
-#include "G4SystemOfUnits.hh"
 #include "G4NistManager.hh"
 #include "G4Material.hh"
 #include "G4Element.hh"
@@ -15,6 +14,7 @@
 #include "G4Tubs.hh"
 #include "G4Cons.hh"
 #include "G4CutTubs.hh"
+#include "G4Trd.hh"
 #include "G4GenericMessenger.hh"
 #include "G4RunManager.hh"
 #include "G4LogicalVolumeStore.hh"
@@ -22,18 +22,23 @@
 #include "G4UnionSolid.hh"
 #include "G4SubtractionSolid.hh"
 #include "G4IntersectionSolid.hh"
+#include "G4FieldManager.hh"
+#include "G4AutoDelete.hh"
 
 #include "ESDetectorConstruction.hpp"
 #include "ESConstants.hpp"
 #include "ESExitSD.hpp"
+#include "ESMagneticField.hpp"
 
 
 ESDetectorConstruction::ESDetectorConstruction(ColliState colliState)
    : G4VUserDetectorConstruction(),
+     fMagneticFieldLV(nullptr),
      fVacuumMat(nullptr),
      fWindowMat(nullptr),
      fAirMat(nullptr),
      fCollimatorMat(nullptr),
+     fMagnetMat(nullptr),
      fMessenger(nullptr),
      fVacuumPV(nullptr),
      fWindowPV(nullptr),
@@ -53,6 +58,7 @@ ESDetectorConstruction::~ESDetectorConstruction()
    delete fWindowMat;
    delete fAirMat;
    delete fCollimatorMat;
+   delete fMagnetMat;
    delete fMessenger;
    delete fVacuumPV;
    delete fWindowPV;
@@ -68,7 +74,8 @@ void ESDetectorConstruction::DefineMaterials()
    fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
    fAirMat = manager->FindOrBuildMaterial("G4_AIR");
    fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
-
+   fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+   
    // Acrylic C5O2H8
    G4Element *eleH  = manager->FindOrBuildElement("H");
    G4Element *eleC  = manager->FindOrBuildElement("C");
@@ -97,13 +104,20 @@ void ESDetectorConstruction::DefineGeometries()
    fColliT = 100.*mm;
    fColliHole = 4.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
+
+   fMagnetH = 381.*mm;  // along Y axis
+   fMagnetW = 392.*mm;   // along X axis
+   fMagnetL = 1000.*mm; // along Z
+   fMagnetGap = 20.*mm;      // ... X 
+   fMagnetDepth = 70.*mm;   // ... Y 
+
 }
 
 G4VPhysicalVolume *ESDetectorConstruction::Construct()
 {
    // world volume
-   G4double worldX = 1.*m;
-   G4double worldY = 1.*m;
+   G4double worldX = 5.*m;
+   G4double worldY = 5.*m;
    G4double worldZ = 10.*m;
 
    G4Box *worldS = new G4Box("World", worldX / 2., worldY / 2., worldZ / 2.);
@@ -119,8 +133,8 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
                           false, 0, fCheckOverlap);
 
    // Air layer
-   G4double airW = 1000.*mm;
-   G4double airH = 1000.*mm;
+   G4double airW = worldX;
+   G4double airH = worldY;
 
    G4Box *airS = new G4Box("Air", airW / 2., airH / 2., fAirT / 2.);
    G4LogicalVolume *airLV = new G4LogicalVolume(airS, fAirMat, "Air");
@@ -132,6 +146,20 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4ThreeVector airPos = G4ThreeVector(0., 0., airZPos);
    fAirPV = new G4PVPlacement(nullptr, airPos, airLV, "Air", worldLV,
                               false, 0, fCheckOverlap);
+
+   // Magnet
+   G4LogicalVolume *magnetLV = ConstructMagnet();
+   visAttributes = new G4VisAttributes(G4Colour::Blue());
+   magnetLV->SetVisAttributes(visAttributes);
+   fVisAttributes.push_back(visAttributes);
+
+   G4double magnetZPos = -airZPos + fMagnetL / 2.;
+   // The Y center of magnet is center of baseBox
+   G4double magnetYPos = (fMagnetH) / 4. - fMagnetDepth / 2.;
+   G4ThreeVector magnetPos = G4ThreeVector(0., magnetYPos, magnetZPos);
+   new G4PVPlacement(nullptr, magnetPos, magnetLV, "Magnet", airLV,
+                     false, 0, fCheckOverlap);   
+   
    // window layer
    G4double windowW = airW;
    G4double windowH = airH;
@@ -145,12 +173,13 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4ThreeVector windowPos = G4ThreeVector(0., 0., fWindowZPos);
    fWindowPV = new G4PVPlacement(nullptr, windowPos, windowLV, "Window", worldLV,
                                  false, 0, fCheckOverlap);
-
+/*   
    // detecting layer at entrance of magnet
    G4double airDetW = airW;
    G4double airDetH = airH;
    //G4double airDetT = -fWindowZPos - fWindowT / 2.;
    G4double airDetT = 1.*mm;
+   
    G4Box *airDetS = new G4Box("AirDet", airDetW / 2., airDetH / 2., airDetT / 2.);
    G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, fAirMat, "AirDet");
    visAttributes = new G4VisAttributes(G4Colour::Magenta());
@@ -164,23 +193,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       new G4PVPlacement(nullptr, airDetPos, airDetLV, name, airLV,
                         false, 0, fCheckOverlap);
    }
-/*      
-   // detecting layer at LANEX position
-   G4double lanexW = airW;
-   G4double lanexH = 0.01*nm;
-   G4double lanexT = fAirT;
-   G4Box *lanexS = new G4Box("LANEX", lanexW / 2., lanexH / 2., lanexT / 2.);
-   G4LogicalVolume *lanexLV = new G4LogicalVolume(lanexS, fAirMat, "LANEX");
-   visAttributes = new G4VisAttributes(G4Colour::Red());
-   lanexLV->SetVisAttributes(visAttributes);
-   fVisAttributes.push_back(visAttributes);
-
-   G4double lanexYPos = -135.*mm;
-   G4ThreeVector lanexPos = G4ThreeVector(0., lanexYPos, 0.);
-   new G4PVPlacement(nullptr, lanexPos, lanexLV, "LANEX", airLV,
-                     false, 0, fCheckOverlap);
 */
-
    // Collimator
    if(fColliState != ColliState::No){
       G4double colliW = airW;
@@ -195,31 +208,83 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       fVisAttributes.push_back(visAttributes);
 
       G4double colliZPos;
-      if(fColliState == ColliState::InAir) colliZPos = airDetT / 2. - fColliT / 2.;
+      if(fColliState == ColliState::InAir) colliZPos = -airZPos - fColliT / 2.;
       else if(fColliState == ColliState::InVac) colliZPos = kSourceZPos + kSourceToColliVac;
       G4ThreeVector colliPos = G4ThreeVector(0., 0., colliZPos);
       
       G4LogicalVolume *colliMotherLV;
-      if(fColliState == ColliState::InAir) colliMotherLV = airDetLV;
+      if(fColliState == ColliState::InAir) colliMotherLV = airLV;
       else if(fColliState == ColliState::InVac) colliMotherLV = worldLV;
       new G4PVPlacement(nullptr, colliPos, colliLV, "Collimator", colliMotherLV,
                         false, 0, fCheckOverlap);
    }
+
+   fMagneticFieldLV = worldLV;
    
    return worldPV;
 }
 
+G4LogicalVolume *ESDetectorConstruction::ConstructMagnet()
+{
+   G4double sidePlateT = 30.*mm;	  // thickness of the side-plates of the magnet (it was not provided)  
+   G4double sidePlateH = fMagnetH - 70.;   // 70 is deduced from the drawing (it was not provided) 
+
+// Construction of the magnet components... 
+   G4double baseW = fMagnetW - 2. * sidePlateT;  // not provided, but ESTIMATED from drawing 
+   G4double baseH = fMagnetH / 2.;   // ESTIMATED... 
+   G4double topW = (fMagnetW - 2. * sidePlateT - fMagnetGap) / 2.;  // ESTIMATED... 
+
+   G4Box *boxS = new G4Box ("box", baseW / 2., baseH / 2., fMagnetL / 2.);
+   G4Box *gapS = new G4Box ("gap", fMagnetGap / 2., (fMagnetDepth + 1.) / 2., fMagnetL / 2.);
+   G4SubtractionSolid *baseBoxS = new G4SubtractionSolid("baseBox", boxS, gapS, 0,
+                                                         G4ThreeVector(0., -(baseH - (fMagnetDepth + 1.)) / 2., 0.)); 
+
+// upper trapezoid of the magnet... 
+   G4RotationMatrix *xRot90deg = new G4RotationMatrix();
+   xRot90deg->rotateX(90.0*deg);
+
+   G4Trd *upperBoxS = new G4Trd ("upperBox", baseW / 2., topW / 2., fMagnetL / 2., fMagnetL / 2., baseH / 2.); 
+   G4UnionSolid *magnetS = new G4UnionSolid("Magnet" , baseBoxS, upperBoxS, xRot90deg,
+                                             G4ThreeVector(0., baseH, 0.)); 
+
+// side plates of the magnet... 
+   G4Box *sidePlateS = new G4Box ("sidePlate", sidePlateT / 2.,  sidePlateH / 2., fMagnetL / 2. );
+   G4double dx = (baseW + sidePlateT) / 2.; 
+   G4double dy = (sidePlateH - baseH) / 2.; 
+   magnetS = new G4UnionSolid("Magnet", magnetS, sidePlateS, 0, G4ThreeVector( dx, dy, 0.)); 
+   magnetS = new G4UnionSolid("Magnet", magnetS, sidePlateS, 0, G4ThreeVector( -dx, dy, 0.)); 
+
+   G4LogicalVolume *magnetLV = new G4LogicalVolume(magnetS, fMagnetMat, "Magnet"); 
+
+   return magnetLV;
+}
+
 void ESDetectorConstruction::ConstructSDandField()
 {
+   // Sensitive Detectors
    G4VSensitiveDetector *ExitSD = new ESExitSD("Exit",
                                                "ExitHitsCollection");
  
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
-      //if(lv->GetName() != "World")
       if(lv->GetName() != "World" && lv->GetName() != "Air")
          SetSensitiveDetector(lv->GetName(), ExitSD);
    }
+
+   // Create magnetic field and set it to Tube using the function
+   // void G4LogicalVolume::SetFieldManager(G4FieldManager *pFieldMgr, G4bool forceToAllDaughters);
+   ESMagneticField* magneticField = new ESMagneticField();
+   fMagneticFieldLV->SetFieldManager(magneticField->GetFieldManager(), true); 
+
+   G4FieldManager* fieldManager = new G4FieldManager();
+   fieldManager->SetDetectorField(magneticField);
+   fieldManager->CreateChordFinder(magneticField);
+   G4bool forceToAllDaughters = true;
+   fMagneticFieldLV->SetFieldManager(fieldManager, forceToAllDaughters);
+
+   // Register the field and its manager for deleting
+   G4AutoDelete::Register(magneticField);
+   G4AutoDelete::Register(fieldManager);
 }
 
 void ESDetectorConstruction::DefineCommands()
