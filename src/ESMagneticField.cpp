@@ -50,6 +50,7 @@ ESMagneticField::ESMagneticField()
 
 ESMagneticField::~ESMagneticField()
 {
+   delete fHisBx;
    delete fFieldManager;
 }
 

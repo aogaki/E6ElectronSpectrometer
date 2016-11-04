@@ -1,16 +1,20 @@
 #!/bin/bash
 
-nEvents=1000000
 
-#for ene in 1 2 8 9
-for((i=1;i<=9;i++))
+echo "/run/beamOn 100000" > tmp.mac
+
+for ene in 1 2 3 4 5 6 7 8 9
 do
-    echo "/run/beamOn $nEvents" > tmp.mac
-    
-    ./E6ES -m tmp.mac -e $i -z
-    hadd -f "$i"GeV.root result_t*
-    
-    rm -f tmp.mac
-done
+    ./E6ES -m tmp.mac -e $ene -d 1 -c 1
+    hadd -f "$ene"GeV_HA.root result_t*
 
-rm -f result*
+    ./E6ES -m tmp.mac -e $ene -d 1 -c 2
+    hadd -f "$ene"GeV_HV.root result_t*
+
+    ./E6ES -m tmp.mac -e $ene -d 2 -c 1
+    hadd -f "$ene"GeV_VA.root result_t*
+
+    ./E6ES -m tmp.mac -e $ene -d 2 -c 2
+    hadd -f "$ene"GeV_VV.root result_t*
+
+done

@@ -16,4 +16,12 @@ enum class ColliState
    InVac,
 };
 
+// changing detector setting
+enum class DetState
+{
+   Real,
+   Horizontal,
+   Vertical,
+};
+
 #endif

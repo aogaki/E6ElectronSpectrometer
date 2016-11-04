@@ -39,8 +39,10 @@ namespace {
       G4cerr << " ./E6ES [-m macro filename]\n"
              << " -a show all particles. default only e-\n"
              << " -e [kinetic energy in GeV] Using mono-energetic beam \n"
-             << " -z zero angle beam \n"
+             << " -z zero divergence angle beam \n"
+             << " -v only vacuum with magnetic field \n"
              << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
+             << " -d [0: real setup of LANEX, 1: many horizontal plane, 2: many vertical plane] \n"
              << G4endl;
    }
 }
@@ -68,12 +70,15 @@ unsigned int GetRandomSeed()
 
 int main(int argc, char **argv)
 {
+   // Too much arguments...
    G4String macro = "";
    G4bool showAll = false;
    G4bool useMonoEne = false;
    G4bool useZeroAng = false;
+   G4bool vacFlag = false;
    G4double beamEne = 9.;
    ColliState colliState = ColliState::No;
+   DetState detState = DetState::Real;
    
    for (G4int i = 1; i < argc; i++) {
       if (G4String(argv[i]) == "-m")
@@ -86,11 +91,23 @@ int main(int argc, char **argv)
       }
       else if (G4String(argv[i]) == "-z")
          useZeroAng = true;
+      else if (G4String(argv[i]) == "-v")
+         vacFlag = true;
       else if (G4String(argv[i]) == "-c"){
          G4int colliFlag = atoi(argv[++i]);
          if(colliFlag == 0) colliState = ColliState::No;
          else if(colliFlag == 1) colliState = ColliState::InAir;
          else if(colliFlag == 2) colliState = ColliState::InVac;
+         else {
+            PrintUsage();
+            return 1;
+         }
+      }
+      else if (G4String(argv[i]) == "-d"){
+         G4int detFlag = atoi(argv[++i]);
+         if(detFlag == 0) detState = DetState::Real;
+         else if(detFlag == 1) detState = DetState::Horizontal;
+         else if(detFlag == 2) detState = DetState::Vertical;
          else {
             PrintUsage();
             return 1;
@@ -123,7 +140,7 @@ int main(int argc, char **argv)
    // Set mandatory initialization classes
    //
    // Detector construction
-   runManager->SetUserInitialization(new ESDetectorConstruction(colliState));
+   runManager->SetUserInitialization(new ESDetectorConstruction(colliState, detState, vacFlag));
 
    // Physics list
    //G4VModularPhysicsList *physicsList = new FTFP_BERT();

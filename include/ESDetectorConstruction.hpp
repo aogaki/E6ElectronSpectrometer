@@ -22,7 +22,7 @@
 class ESDetectorConstruction : public G4VUserDetectorConstruction
 {
 public:
-   ESDetectorConstruction(ColliState colliState);
+   ESDetectorConstruction(ColliState colliState, DetState detState, G4bool vacFlag);
    virtual ~ESDetectorConstruction();
 
    virtual G4VPhysicalVolume *Construct();
@@ -40,6 +40,7 @@ private:
    G4Material *fAirMat;
    G4Material *fCollimatorMat;
    G4Material *fMagnetMat;
+   G4bool fVacFlag;
    
    // Geometry parameters
    // I have to think which variables should be defined in DefineGeometries()
@@ -63,6 +64,11 @@ private:
    
    // Magnet
    G4LogicalVolume *ConstructMagnet();
+
+   // Detectors (LANEX or Air)
+   DetState fDetState;
+   void ConstructHorizontalDetectors();
+   void ConstructVerticalDetectors();
    
    // For command
    void DefineCommands();

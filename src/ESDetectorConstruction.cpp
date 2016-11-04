@@ -31,7 +31,7 @@
 #include "ESMagneticField.hpp"
 
 
-ESDetectorConstruction::ESDetectorConstruction(ColliState colliState)
+ESDetectorConstruction::ESDetectorConstruction(ColliState colliState, DetState detState, G4bool vacFlag)
    : G4VUserDetectorConstruction(),
      fMagneticFieldLV(nullptr),
      fVacuumMat(nullptr),
@@ -39,12 +39,14 @@ ESDetectorConstruction::ESDetectorConstruction(ColliState colliState)
      fAirMat(nullptr),
      fCollimatorMat(nullptr),
      fMagnetMat(nullptr),
+     fVacFlag(vacFlag),
      fMessenger(nullptr),
      fVacuumPV(nullptr),
      fWindowPV(nullptr),
      fAirPV(nullptr)
 {
    fColliState = colliState;
+   fDetState = detState;
    
    fCheckOverlap = true;
    DefineMaterials();
@@ -55,10 +57,12 @@ ESDetectorConstruction::ESDetectorConstruction(ColliState colliState)
 ESDetectorConstruction::~ESDetectorConstruction()
 {
    delete fVacuumMat;
-   delete fWindowMat;
-   delete fAirMat;
-   delete fCollimatorMat;
-   delete fMagnetMat;
+   if(!fVacFlag){
+      delete fWindowMat;
+      delete fAirMat;
+      delete fCollimatorMat;
+      delete fMagnetMat;
+   }
    delete fMessenger;
    delete fVacuumPV;
    delete fWindowPV;
@@ -71,10 +75,14 @@ void ESDetectorConstruction::DefineMaterials()
 
    // NIST database materials
    fVacuumMat = manager->FindOrBuildMaterial("G4_Galactic");
-   fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
-   fAirMat = manager->FindOrBuildMaterial("G4_AIR");
-   fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
-   fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+   if(fVacFlag)
+      fWindowMat = fAirMat = fCollimatorMat = fMagnetMat = fVacuumMat;
+   else{
+      fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
+      fAirMat = manager->FindOrBuildMaterial("G4_AIR");
+      fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
+      fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+   }
    
    // Acrylic C5O2H8
    G4Element *eleH  = manager->FindOrBuildElement("H");
@@ -91,11 +99,12 @@ void ESDetectorConstruction::DefineMaterials()
    acrylic->AddElement(eleH, 8);
 
    //fWindowMat = acrylic;
+
 }
 
 void ESDetectorConstruction::DefineGeometries()
 {
-   fAirT = 5000.*mm;
+   fAirT = 10000.*mm;
    fWindowT = 3.*mm;
    fVacuumT = 5000.*mm;
 
@@ -118,7 +127,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    // world volume
    G4double worldX = 5.*m;
    G4double worldY = 5.*m;
-   G4double worldZ = 10.*m;
+   G4double worldZ = 20.*m;
 
    G4Box *worldS = new G4Box("World", worldX / 2., worldY / 2., worldZ / 2.);
    G4LogicalVolume *worldLV = new G4LogicalVolume(worldS, fVacuumMat, "World");
@@ -160,7 +169,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    new G4PVPlacement(nullptr, magnetPos, magnetLV, "Magnet", airLV,
                      false, 0, fCheckOverlap);   
    
-   // window layer
+   // Window layer
    G4double windowW = airW;
    G4double windowH = airH;
 
@@ -173,28 +182,8 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4ThreeVector windowPos = G4ThreeVector(0., 0., fWindowZPos);
    fWindowPV = new G4PVPlacement(nullptr, windowPos, windowLV, "Window", worldLV,
                                  false, 0, fCheckOverlap);
-/*   
-   // detecting layer at entrance of magnet
-   G4double airDetW = airW;
-   G4double airDetH = airH;
-   //G4double airDetT = -fWindowZPos - fWindowT / 2.;
-   G4double airDetT = 1.*mm;
-   
-   G4Box *airDetS = new G4Box("AirDet", airDetW / 2., airDetH / 2., airDetT / 2.);
-   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, fAirMat, "AirDet");
-   visAttributes = new G4VisAttributes(G4Colour::Magenta());
-   airDetLV->SetVisAttributes(visAttributes);
-   fVisAttributes.push_back(visAttributes);
 
-   for(G4int i = 0; i < 25; i++){
-      G4double airDetZPos = -fAirT / 2. - airDetT / 2. + 100.*(i + 1)*mm;
-      G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
-      G4String name = "AirDet" + std::to_string(i);
-      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, airLV,
-                        false, 0, fCheckOverlap);
-   }
-*/
-   // Collimator
+   // Collimator layer
    if(fColliState != ColliState::No){
       G4double colliW = airW;
       G4double colliH = airH;
@@ -218,6 +207,14 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       new G4PVPlacement(nullptr, colliPos, colliLV, "Collimator", colliMotherLV,
                         false, 0, fCheckOverlap);
    }
+
+   if(fDetState == DetState::Real){
+      // Not yet implemented
+   }
+   else if(fDetState == DetState::Vertical)
+      ConstructVerticalDetectors();
+   else if(fDetState == DetState::Horizontal)
+      ConstructHorizontalDetectors();
 
    fMagneticFieldLV = worldLV;
    
@@ -259,6 +256,47 @@ G4LogicalVolume *ESDetectorConstruction::ConstructMagnet()
    return magnetLV;
 }
 
+void ESDetectorConstruction::ConstructVerticalDetectors()
+{
+   G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
+   G4Box *boxS = (G4Box*)motherLV->GetSolid();
+   G4double airDetT = 1.0*mm;
+   G4Box *airDetS = new G4Box("AirDetector", boxS->GetXHalfLength(), boxS->GetYHalfLength(), airDetT / 2.);
+   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetector");
+   airDetLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   for(G4int i = 0; i < 50; i++){
+      G4double airDetZPos = -airZPos + fMagnetL + 100.*mm - airDetT / 2. + (i * 100.*mm);
+      G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
+      G4String name = "AirDetector" + std::to_string(i);
+      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, motherLV,
+                        false, 0, fCheckOverlap);
+   }
+
+}
+
+void ESDetectorConstruction::ConstructHorizontalDetectors()
+{
+   G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
+   G4Box *boxS = (G4Box*)motherLV->GetSolid();
+   G4double airDetT = 1.0*mm;
+   G4double airDetZ = 8000.*mm;
+   G4Box *airDetS = new G4Box("AirDetector", boxS->GetXHalfLength(), airDetT / 2., airDetZ / 2.);
+   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetector");
+   airDetLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   for(G4int i = 0; i < 47; i++){
+      G4double airDetZPos = -airZPos + airDetZ / 2.;
+      G4double airDetYPos = -40.*mm + airDetT / 2. - (i * 10.*mm);
+      G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, airDetZPos);
+      G4String name = "AirDetector" + std::to_string(i);
+      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, motherLV,
+                        false, 0, fCheckOverlap);
+   }
+}
+
 void ESDetectorConstruction::ConstructSDandField()
 {
    // Sensitive Detectors
@@ -267,7 +305,8 @@ void ESDetectorConstruction::ConstructSDandField()
  
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
-      if(lv->GetName() != "World" && lv->GetName() != "Air")
+      //if(lv->GetName() != "World" && lv->GetName() != "Air")
+      if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
          SetSensitiveDetector(lv->GetName(), ExitSD);
    }
 
@@ -285,6 +324,7 @@ void ESDetectorConstruction::ConstructSDandField()
    // Register the field and its manager for deleting
    G4AutoDelete::Register(magneticField);
    G4AutoDelete::Register(fieldManager);
+
 }
 
 void ESDetectorConstruction::DefineCommands()
