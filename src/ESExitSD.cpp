@@ -37,7 +37,7 @@ G4bool ESExitSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
    if(!step->IsLastStepInVolume()) return false; // only the last step
    G4Track *track = step->GetTrack();   
    G4int trackID = track->GetTrackID();
-   if(trackID != 1) return false; // only the primal particle
+   //if(trackID != 1) return false; // only the primal particle
    
    ESExitHit *newHit = new ESExitHit();
 

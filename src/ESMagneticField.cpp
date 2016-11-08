@@ -40,7 +40,8 @@ ESMagneticField::ESMagneticField()
    fXMin = -10.*mm;
    fXMax = 10.*mm;
    fYMin = fHisBx->GetYaxis()->GetXmin()*mm;
-   fYMax = fHisBx->GetYaxis()->GetXmax()*mm;
+   //fYMax = fHisBx->GetYaxis()->GetXmax()*mm;
+   fYMax = 35.*mm;
    fZMin = fHisBx->GetXaxis()->GetXmin()*mm;
    fZMax = fHisBx->GetXaxis()->GetXmax()*mm;
 

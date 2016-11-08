@@ -260,19 +260,16 @@ void ESDetectorConstruction::ConstructVerticalDetectors()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    G4Box *boxS = (G4Box*)motherLV->GetSolid();
-   G4double airDetT = 1.0*mm;
+   G4double airDetT = 1.0*um;
    G4Box *airDetS = new G4Box("AirDetector", boxS->GetXHalfLength(), boxS->GetYHalfLength(), airDetT / 2.);
    G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetector");
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   for(G4int i = 0; i < 50; i++){
-      G4double airDetZPos = -airZPos + fMagnetL + 100.*mm - airDetT / 2. + (i * 100.*mm);
-      G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
-      G4String name = "AirDetector" + std::to_string(i);
-      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, motherLV,
-                        false, 0, fCheckOverlap);
-   }
+   G4double airDetZPos = -airZPos + fMagnetL + 500.*mm - airDetT / 2.;
+   G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetector", motherLV,
+                     false, 0, fCheckOverlap);
 
 }
 
@@ -287,14 +284,11 @@ void ESDetectorConstruction::ConstructHorizontalDetectors()
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   for(G4int i = 0; i < 47; i++){
-      G4double airDetZPos = -airZPos + airDetZ / 2.;
-      G4double airDetYPos = -40.*mm + airDetT / 2. - (i * 10.*mm);
-      G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, airDetZPos);
-      G4String name = "AirDetector" + std::to_string(i);
-      new G4PVPlacement(nullptr, airDetPos, airDetLV, name, motherLV,
-                        false, 0, fCheckOverlap);
-   }
+   G4double airDetZPos = -airZPos + airDetZ / 2.;
+   G4double airDetYPos = -150.*mm + airDetT / 2.;
+   G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, airDetZPos);
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetector", motherLV,
+                     false, 0, fCheckOverlap);
 }
 
 void ESDetectorConstruction::ConstructSDandField()
