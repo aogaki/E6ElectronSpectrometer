@@ -42,7 +42,7 @@ namespace {
              << " -z zero divergence angle beam \n"
              << " -v only vacuum with magnetic field \n"
              << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
-             << " -d [0: real setup of LANEX, 1: many horizontal plane, 2: many vertical plane] \n"
+             << " -d [0: real setup of LANEX, 1: large horizontal plane, 2: large vertical plane] \n"
              << G4endl;
    }
 }

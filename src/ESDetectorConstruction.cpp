@@ -108,7 +108,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowT = 3.*mm;
    fVacuumT = 5000.*mm;
 
-   fWindowZPos = kSourceZPos + kSourceToWindow + fWindowT / 2.;
+   fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
    fColliHole = 4.*mm;
@@ -210,6 +210,8 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    if(fDetState == DetState::Real){
       // Not yet implemented
+      ConstructVerticalDetectors();
+      ConstructHorizontalDetectors();
    }
    else if(fDetState == DetState::Vertical)
       ConstructVerticalDetectors();
@@ -261,14 +263,14 @@ void ESDetectorConstruction::ConstructVerticalDetectors()
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    G4Box *boxS = (G4Box*)motherLV->GetSolid();
    G4double airDetT = 1.0*um;
-   G4Box *airDetS = new G4Box("AirDetector", boxS->GetXHalfLength(), boxS->GetYHalfLength(), airDetT / 2.);
-   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetector");
+   G4Box *airDetS = new G4Box("AirDetectorV", boxS->GetXHalfLength(), boxS->GetYHalfLength(), airDetT / 2.);
+   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetectorV");
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   G4double airDetZPos = -airZPos + fMagnetL + 500.*mm - airDetT / 2.;
+   G4double airDetZPos = -airZPos + fMagnetL + 1000.*mm - airDetT / 2.;
    G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
-   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetector", motherLV,
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorV", motherLV,
                      false, 0, fCheckOverlap);
 
 }
@@ -279,15 +281,15 @@ void ESDetectorConstruction::ConstructHorizontalDetectors()
    G4Box *boxS = (G4Box*)motherLV->GetSolid();
    G4double airDetT = 1.0*mm;
    G4double airDetZ = 8000.*mm;
-   G4Box *airDetS = new G4Box("AirDetector", boxS->GetXHalfLength(), airDetT / 2., airDetZ / 2.);
-   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetector");
+   G4Box *airDetS = new G4Box("AirDetectorH", boxS->GetXHalfLength(), airDetT / 2., airDetZ / 2.);
+   G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetectorH");
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
    G4double airDetZPos = -airZPos + airDetZ / 2.;
    G4double airDetYPos = -150.*mm + airDetT / 2.;
    G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, airDetZPos);
-   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetector", motherLV,
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorH", motherLV,
                      false, 0, fCheckOverlap);
 }
 
