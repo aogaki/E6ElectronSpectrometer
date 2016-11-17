@@ -3,7 +3,7 @@
 #include <time.h>
 
 #include <TFile.h>
-#include <TH2.h>
+#include <TH1.h>
 #include <TF1.h>
 #include <TRandom3.h>
 
@@ -33,6 +33,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
      fParticleGun(nullptr),
      fUseMonoEne(useMonoEne),
      fBeamEne(beamEne*GeV),
+     fFncNorm(nullptr),
+     fHisBeam(nullptr),
      fUseZeroAng(useZeroAng),
      fMessenger(nullptr)
 {
@@ -41,6 +43,13 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    G4int nPar = 1;
    fParticleGun = new G4ParticleGun(nPar);
 
+   fNamBeamFile = new TFile("Data/NamBeam.root", "READ");
+   fHisBeam = (TH1D*)fNamBeamFile->Get("HisBeam");
+   fFncNorm = (TF1*)fNamBeamFile->Get("FncNorm");
+   Int_t seed = G4UniformRand() * 1000000;
+   G4cout << "Seed of PGA = " << seed << G4endl;
+   gRandom->SetSeed(seed);
+   
    fZPosition = kSourceZPos;
    fThetaMax = 1.5*mrad;
    fCosMax = cos(fThetaMax);
@@ -54,7 +63,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    fParticleGun->SetParticleEnergy(fBeamEne);
 
    if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
-   else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
+   //else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
+   else GunPointer = &ESPrimaryGeneratorAction::NamGun;
 
    if(fUseZeroAng) AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
    else AngGenPointer = &ESPrimaryGeneratorAction::UniformAng;
@@ -64,8 +74,13 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
 
 ESPrimaryGeneratorAction::~ESPrimaryGeneratorAction()
 {
+   G4AutoLock lock(&mutexInPGA);
+   
    delete fParticleGun;
    delete fMessenger;
+
+   fNamBeamFile->Close();
+   delete fNamBeamFile;
 }
 
 void ESPrimaryGeneratorAction::MonoEneGun()
@@ -84,6 +99,12 @@ void ESPrimaryGeneratorAction::ZeroAng()
 void ESPrimaryGeneratorAction::UniformGun()
 {
    fBeamEne = (G4UniformRand() + 8)*GeV;
+   (this->*AngGenPointer)(); 
+}
+
+void ESPrimaryGeneratorAction::NamGun()
+{
+   fBeamEne = fFncNorm->Eval(fHisBeam->GetRandom())*GeV;
    (this->*AngGenPointer)(); 
 }
 

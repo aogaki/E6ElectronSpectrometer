@@ -11,8 +11,9 @@ class G4Event;
 class G4ParticleGun;
 class G4GenericMessenger;
 class TF1;
-class TH2D;
+class TH1D;
 class TFile;
+
 
 class ESPrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 {
@@ -27,10 +28,14 @@ private:
 
    void MonoEneGun();
    void UniformGun();
+   void NamGun();
    void (ESPrimaryGeneratorAction::*GunPointer)();
    G4bool fUseMonoEne;
    G4double fBeamEne;
-
+   TFile *fNamBeamFile;
+   TF1 *fFncNorm;
+   TH1D *fHisBeam;
+   
    void ZeroAng();
    void UniformAng();
    void (ESPrimaryGeneratorAction::*AngGenPointer)();
