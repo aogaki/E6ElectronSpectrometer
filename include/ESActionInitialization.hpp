@@ -9,7 +9,7 @@
 class ESActionInitialization : public G4VUserActionInitialization
 {
 public:
-   ESActionInitialization(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng);
+   ESActionInitialization(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng, G4bool refFlag);
    virtual ~ESActionInitialization();
 
    virtual void BuildForMaster() const;
@@ -19,7 +19,8 @@ private:
    G4bool fUseMonoEne;
    G4double fBeamEne;
    G4bool fUseZeroAng;
-
+   G4bool fRefFlag;
+   
 };
 
 #endif

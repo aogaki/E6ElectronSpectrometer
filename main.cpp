@@ -43,6 +43,7 @@ namespace {
              << " -v only vacuum with magnetic field \n"
              << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
              << " -d [0: real setup of LANEX, 1: large horizontal plane, 2: large vertical plane] \n"
+             << " -r Making reference data for callibration of LANEX position"
              << G4endl;
    }
 }
@@ -76,6 +77,7 @@ int main(int argc, char **argv)
    G4bool useMonoEne = false;
    G4bool useZeroAng = false;
    G4bool vacFlag = false;
+   G4bool refFlag = false;
    G4double beamEne = 9.;
    ColliState colliState = ColliState::No;
    DetState detState = DetState::Real;
@@ -93,6 +95,11 @@ int main(int argc, char **argv)
          useZeroAng = true;
       else if (G4String(argv[i]) == "-v")
          vacFlag = true;
+      else if (G4String(argv[i]) == "-r"){
+         useZeroAng = true;
+         vacFlag = true;
+         refFlag = true;
+      }
       else if (G4String(argv[i]) == "-c"){
          G4int colliFlag = atoi(argv[++i]);
          if(colliFlag == 0) colliState = ColliState::No;
@@ -131,7 +138,8 @@ int main(int argc, char **argv)
    // Construct the default run manager
 #ifdef G4MULTITHREADED
    G4MTRunManager *runManager = new G4MTRunManager();
-   runManager->SetNumberOfThreads(G4Threading::G4GetNumberOfCores());
+   if(refFlag) runManager->SetNumberOfThreads(1);
+   else runManager->SetNumberOfThreads(G4Threading::G4GetNumberOfCores());
    //runManager->SetNumberOfThreads(1);
 #else
    G4RunManager *runManager = new G4RunManager();
@@ -152,7 +160,7 @@ int main(int argc, char **argv)
    runManager->SetUserInitialization(physicsList);
 
    // Primary generator action and User action intialization
-   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne, useZeroAng));
+   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne, useZeroAng, refFlag));
 
    // Initialize G4 kernel
    //

@@ -18,7 +18,7 @@ class TFile;
 class ESPrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 {
 public:
-   ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng);
+   ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng, G4bool refFlag);
    virtual ~ESPrimaryGeneratorAction();
 
    virtual void GeneratePrimaries(G4Event *);
@@ -44,6 +44,9 @@ private:
    G4double fThetaMax;
    G4double fCosMax;
 
+   void RefGun();
+   G4bool fRefFlag;
+   
    // Commands
    void DefineCommands();
    G4GenericMessenger *fMessenger;

@@ -28,7 +28,7 @@ static G4int nEveInPGA = 0; // Global variable change to local?
 G4Mutex mutexInPGA = G4MUTEX_INITIALIZER;
 
 ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne,
-                                                   G4bool useZeroAng)
+                                                   G4bool useZeroAng, G4bool refFlag)
    : G4VUserPrimaryGeneratorAction(),
      fParticleGun(nullptr),
      fUseMonoEne(useMonoEne),
@@ -36,6 +36,7 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
      fFncNorm(nullptr),
      fHisBeam(nullptr),
      fUseZeroAng(useZeroAng),
+     fRefFlag(refFlag),
      fMessenger(nullptr)
 {
    G4AutoLock lock(&mutexInPGA);
@@ -53,6 +54,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    fZPosition = kSourceZPos;
    fThetaMax = 1.5*mrad;
    fCosMax = cos(fThetaMax);
+
+   if(fRefFlag) fBeamEne = 100.*MeV;
    
    G4ParticleTable *parTable = G4ParticleTable::GetParticleTable();
    G4ParticleDefinition *electron = parTable->FindParticle("e-");
@@ -63,6 +66,7 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    fParticleGun->SetParticleEnergy(fBeamEne);
 
    if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
+   else if(fRefFlag) GunPointer = &ESPrimaryGeneratorAction::RefGun;
    //else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
    else GunPointer = &ESPrimaryGeneratorAction::NamGun;
 
@@ -87,6 +91,13 @@ void ESPrimaryGeneratorAction::MonoEneGun()
 {
    // Do nothing
    // Using the parameters set in constructor
+   (this->*AngGenPointer)(); 
+}
+
+void ESPrimaryGeneratorAction::RefGun()
+{
+   // Do nothing
+   // After shooting, energy will adding 1 MeV
    (this->*AngGenPointer)(); 
 }
 
@@ -123,6 +134,8 @@ void ESPrimaryGeneratorAction::GeneratePrimaries(G4Event *event)
    fParticleGun->SetParticleEnergy(fBeamEne);
    fParticleGun->GeneratePrimaryVertex(event);
 
+   if(fRefFlag) fBeamEne += 1.*MeV;
+   
    G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
    anaMan->FillNtupleIColumn(1, 0, event->GetEventID());
    anaMan->FillNtupleIColumn(1, 1, 11); // electron PDG code
