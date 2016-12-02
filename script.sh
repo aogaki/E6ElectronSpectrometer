@@ -1,16 +1,14 @@
 #!/bin/bash
 
-
-for pos in 500 600 700 800 900 1000
+echo "/run/beamOn 100000" > tmp.mac
+#for hole in 1 2 3 4 5 6 7 8
+for hole in 4
 do
-    echo "/run/beamOn 1000000" > tmp.mac
-    for ene in 1 2 3 4 5 6 7 8 9 10
+#    for ene in 1 2 3 4 5 6 7 8 9 10
+    for ene in 10
     do
-	./E6ES$pos -e $ene -m tmp.mac -d 2
-	hadd -f "$ene"GeV$pos.root result_t*
+	./E6ES$hole -e $ene -m tmp.mac -c 1 -d 2
+	hadd -f "$ene"GeV$hole.root result_t*
     done
-
-    echo "/run/beamOn 11900" > tmp.mac
-    ./E6ES$pos -r -m tmp.mac -d 2
-    mv result_t0.root Ref"$ene"GeV$pos.root
 done
+

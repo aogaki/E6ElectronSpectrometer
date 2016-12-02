@@ -37,6 +37,7 @@ ESDetectorConstruction::ESDetectorConstruction(ColliState colliState, DetState d
      fVacuumMat(nullptr),
      fWindowMat(nullptr),
      fAirMat(nullptr),
+     fLANEXMat(nullptr),
      fCollimatorMat(nullptr),
      fMagnetMat(nullptr),
      fVacFlag(vacFlag),
@@ -60,6 +61,7 @@ ESDetectorConstruction::~ESDetectorConstruction()
    if(!fVacFlag){
       delete fWindowMat;
       delete fAirMat;
+      delete fLANEXMat;
       delete fCollimatorMat;
       delete fMagnetMat;
    }
@@ -76,10 +78,11 @@ void ESDetectorConstruction::DefineMaterials()
    // NIST database materials
    fVacuumMat = manager->FindOrBuildMaterial("G4_Galactic");
    if(fVacFlag)
-      fWindowMat = fAirMat = fCollimatorMat = fMagnetMat = fVacuumMat;
+      fWindowMat = fAirMat = fLANEXMat = fCollimatorMat = fMagnetMat = fVacuumMat;
    else{
       fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
       fAirMat = manager->FindOrBuildMaterial("G4_AIR");
+      fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
       fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
       fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
    }
@@ -111,7 +114,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
-   fColliHole = 4.*mm;
+   fColliHole = 1.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
 
    fMagnetH = 381.*mm;  // along Y axis
@@ -210,8 +213,8 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    if(fDetState == DetState::Real){
       // Not yet implemented
-      ConstructVerticalDetectors();
-      ConstructHorizontalDetectors();
+      //ConstructVerticalDetectors();
+      //ConstructHorizontalDetectors();
    }
    else if(fDetState == DetState::Vertical)
       ConstructVerticalDetectors();
@@ -262,15 +265,26 @@ void ESDetectorConstruction::ConstructVerticalDetectors()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    G4Box *boxS = (G4Box*)motherLV->GetSolid();
-   G4double airDetT = 1.0*um;
+   
+   G4double LANEXDetT = 300.0*um * 2.;
+   G4Box *LANEXDetS = new G4Box("LANEXDetectorV", boxS->GetXHalfLength(), boxS->GetYHalfLength(), LANEXDetT / 2.);
+   G4LogicalVolume *LANEXDetLV = new G4LogicalVolume(LANEXDetS, fLANEXMat, "LANEXDetectorV");
+   LANEXDetLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   G4double LANEXDetZPos = -airZPos + fMagnetL + 1000.*mm;
+   G4ThreeVector LANEXDetPos = G4ThreeVector(0., 0., LANEXDetZPos);
+   new G4PVPlacement(nullptr, LANEXDetPos, LANEXDetLV, "LANEXDetectorV", motherLV,
+                     false, 0, fCheckOverlap);
+
+   G4double airDetT = LANEXDetT / 2.;
    G4Box *airDetS = new G4Box("AirDetectorV", boxS->GetXHalfLength(), boxS->GetYHalfLength(), airDetT / 2.);
    G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetectorV");
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
-   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   G4double airDetZPos = -airZPos + fMagnetL + 1000.*mm - airDetT / 2.;
+   G4double airDetZPos = -airDetT / 2.;
    G4ThreeVector airDetPos = G4ThreeVector(0., 0., airDetZPos);
-   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorV", motherLV,
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorV", LANEXDetLV,
                      false, 0, fCheckOverlap);
 
 }
@@ -279,18 +293,30 @@ void ESDetectorConstruction::ConstructHorizontalDetectors()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    G4Box *boxS = (G4Box*)motherLV->GetSolid();
-   G4double airDetT = 1.0*mm;
-   G4double airDetZ = 8000.*mm;
-   G4Box *airDetS = new G4Box("AirDetectorH", boxS->GetXHalfLength(), airDetT / 2., airDetZ / 2.);
+
+   G4double LANEXDetT = 300.0*um * 2.;
+   G4double LANEXDetZ = 8000.*mm;
+   G4Box *LANEXDetS = new G4Box("LANEXDetectorH", boxS->GetXHalfLength(), LANEXDetT / 2., LANEXDetZ / 2.);
+   G4LogicalVolume *LANEXDetLV = new G4LogicalVolume(LANEXDetS, fLANEXMat, "LANEXDetectorH");
+   LANEXDetLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   G4double LANEXDetZPos = -airZPos + LANEXDetZ / 2.;
+   G4double LANEXDetYPos = -150.*mm;
+   G4ThreeVector LANEXDetPos = G4ThreeVector(0., LANEXDetYPos, LANEXDetZPos);
+   new G4PVPlacement(nullptr, LANEXDetPos, LANEXDetLV, "LANEXDetectorH", motherLV,
+                     false, 0, fCheckOverlap);
+
+   G4double airDetT = LANEXDetT / 2.;
+   G4Box *airDetS = new G4Box("AirDetectorH", boxS->GetXHalfLength(), airDetT / 2., LANEXDetZ / 2.);
    G4LogicalVolume *airDetLV = new G4LogicalVolume(airDetS, motherLV->GetMaterial(), "AirDetectorH");
    airDetLV->SetVisAttributes(G4Colour::Yellow());
 
-   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   G4double airDetZPos = -airZPos + airDetZ / 2.;
-   G4double airDetYPos = -150.*mm + airDetT / 2.;
-   G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, airDetZPos);
-   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorH", motherLV,
+   G4double airDetYPos = airDetT / 2.;
+   G4ThreeVector airDetPos = G4ThreeVector(0., airDetYPos, 0.);
+   new G4PVPlacement(nullptr, airDetPos, airDetLV, "AirDetectorH", LANEXDetLV,
                      false, 0, fCheckOverlap);
+
 }
 
 void ESDetectorConstruction::ConstructSDandField()
@@ -302,7 +328,8 @@ void ESDetectorConstruction::ConstructSDandField()
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
       //if(lv->GetName() != "World" && lv->GetName() != "Air")
-      if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
+      //if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
+      if((lv->GetName()).contains("Detector"))
          SetSensitiveDetector(lv->GetName(), ExitSD);
    }
 

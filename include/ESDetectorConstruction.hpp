@@ -38,6 +38,7 @@ private:
    G4Material *fVacuumMat;
    G4Material *fWindowMat;
    G4Material *fAirMat;
+   G4Material *fLANEXMat;
    G4Material *fCollimatorMat;
    G4Material *fMagnetMat;
    G4bool fVacFlag;
@@ -65,7 +66,7 @@ private:
    // Magnet
    G4LogicalVolume *ConstructMagnet();
 
-   // Detectors (LANEX or Air)
+   // Detectors (LANEX and Air, Air records incident LANEX)
    DetState fDetState;
    void ConstructHorizontalDetectors();
    void ConstructVerticalDetectors();
