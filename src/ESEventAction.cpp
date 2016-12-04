@@ -82,6 +82,8 @@ void ESEventAction::EndOfEventAction(const G4Event *event)
       anaMan->FillNtupleDColumn(0, 9, momentum.y());
       anaMan->FillNtupleDColumn(0, 10, momentum.z());
 
+      G4String vertexName = newHit->GetVertexName();
+      anaMan->FillNtupleSColumn(0, 11, vertexName);
       
       anaMan->AddNtupleRow(0);
    }
