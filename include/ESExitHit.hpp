@@ -42,6 +42,9 @@ public:
    void SetVolumeName(G4String volumeName) {fVolumeName = volumeName;};
    G4String GetVolumeName() {return fVolumeName;};
 
+   void SetVertexName(G4String vertexName) {fVertexName = vertexName;};
+   G4String GetVertexName() {return fVertexName;};
+
 private:
    G4int fTrackID;
    G4int fPDGCode;
@@ -50,6 +53,7 @@ private:
    G4ThreeVector fMomentum;
    G4int fIsLastStep;
    G4String fVolumeName;
+   G4String fVertexName;
 };
 
 typedef G4THitsCollection<ESExitHit> ESExitHitsCollection;

@@ -1,14 +1,20 @@
 #!/bin/bash
 
-echo "/run/beamOn 100000" > tmp.mac
-#for hole in 1 2 3 4 5 6 7 8
-for hole in 4
+echo "/run/beamOn 1000000" > tmp.mac
+
+./E6ES -m tmp.mac -d 2
+hadd -f normal.root result_t*
+
+./E6ES -v -m tmp.mac -d 2
+hadd -f vacuum.root result_t*
+
+for ene in 3 5 7
 do
-#    for ene in 1 2 3 4 5 6 7 8 9 10
-    for ene in 10
-    do
-	./E6ES$hole -e $ene -m tmp.mac -c 1 -d 2
-	hadd -f "$ene"GeV$hole.root result_t*
-    done
+    ./E6ES -e $ene -m tmp.mac -d 2
+    hadd -f "$ene"GeV.root result_t*
 done
 
+echo "/run/beamOn 100000" > tmp.mac
+
+./E6ES -m tmp.mac -d 2 -c 1
+hadd -f collimator.root result_t*

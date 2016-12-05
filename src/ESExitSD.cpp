@@ -38,18 +38,21 @@ G4bool ESExitSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
    G4Track *track = step->GetTrack();   
    G4int trackID = track->GetTrackID();
    //if(trackID != 1) return false; // only the primal particle
-   
+
    ESExitHit *newHit = new ESExitHit();
 
+   newHit->SetTrackID(trackID);
+   
    G4ParticleDefinition *particle = track->GetDefinition();
    G4int pdgCode = particle->GetPDGEncoding();
    newHit->SetPDGCode(pdgCode);
 
-   newHit->SetTrackID(trackID);
-   
    G4StepPoint *preStepPoint = step->GetPreStepPoint();
    G4String volumeName = preStepPoint->GetPhysicalVolume()->GetName();
    newHit->SetVolumeName(volumeName);
+
+   G4String vertexName = track->GetLogicalVolumeAtVertex()->GetName();
+   newHit->SetVertexName(vertexName);
 
    G4StepPoint *postStepPoint = step->GetPostStepPoint();
    G4ThreeVector position =  postStepPoint->GetPosition();

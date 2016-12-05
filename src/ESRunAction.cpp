@@ -39,6 +39,9 @@ void ESRunAction::BeginOfRunAction(const G4Run *)
    anaMan->CreateNtupleDColumn(0, "vy");
    anaMan->CreateNtupleDColumn(0, "vz");
 
+   anaMan->CreateNtupleSColumn(0, "VertexName");
+
+   // Init parameters
    anaMan->CreateNtuple("InitPar", "Initial Parameters");
    anaMan->CreateNtupleIColumn(1, "EventID");
    anaMan->CreateNtupleIColumn(1, "PDGCode");

@@ -63,8 +63,9 @@ ESDetectorConstruction::~ESDetectorConstruction()
       delete fAirMat;
       delete fLANEXMat;
       delete fCollimatorMat;
-      delete fMagnetMat;
    }
+   delete fMagnetMat;
+
    delete fMessenger;
    delete fVacuumPV;
    delete fWindowPV;
@@ -78,14 +79,14 @@ void ESDetectorConstruction::DefineMaterials()
    // NIST database materials
    fVacuumMat = manager->FindOrBuildMaterial("G4_Galactic");
    if(fVacFlag)
-      fWindowMat = fAirMat = fLANEXMat = fCollimatorMat = fMagnetMat = fVacuumMat;
+      fWindowMat = fAirMat = fLANEXMat = fCollimatorMat = fVacuumMat;
    else{
       fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
       fAirMat = manager->FindOrBuildMaterial("G4_AIR");
       fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
       fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
-      fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
    }
+   fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
    
    // Acrylic C5O2H8
    G4Element *eleH  = manager->FindOrBuildElement("H");
