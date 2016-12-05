@@ -114,7 +114,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
-   fColliHole = 1.*mm;
+   fColliHole = 3.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
 
    fMagnetH = 381.*mm;  // along Y axis
