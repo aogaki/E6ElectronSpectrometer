@@ -32,7 +32,7 @@ private:
    
    // Magnetic Field information
    TH2D *fHisBx;
-
+   
    G4ThreeVector fOffset;
    
    // Magnetic field region used with global cordinates

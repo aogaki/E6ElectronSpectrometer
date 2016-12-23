@@ -24,6 +24,7 @@
 #include "G4IntersectionSolid.hh"
 #include "G4FieldManager.hh"
 #include "G4AutoDelete.hh"
+#include "G4SDManager.hh"
 
 #include "ESDetectorConstruction.hpp"
 #include "ESConstants.hpp"
@@ -115,7 +116,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
-   fColliHole = 3.*mm;
+   fColliHole = 1.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
 
    fMagnetH = 381.*mm;  // along Y axis
@@ -200,12 +201,12 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       colliLV->SetVisAttributes(visAttributes);
       fVisAttributes.push_back(visAttributes);
 
-      G4double colliZPos;
+      G4double colliZPos{0.};
       if(fColliState == ColliState::InAir) colliZPos = -airZPos - fColliT / 2.;
       else if(fColliState == ColliState::InVac) colliZPos = kSourceZPos + kSourceToColliVac;
       G4ThreeVector colliPos = G4ThreeVector(0., 0., colliZPos);
       
-      G4LogicalVolume *colliMotherLV;
+      G4LogicalVolume *colliMotherLV{nullptr};
       if(fColliState == ColliState::InAir) colliMotherLV = airLV;
       else if(fColliState == ColliState::InVac) colliMotherLV = worldLV;
       new G4PVPlacement(nullptr, colliPos, colliLV, "Collimator", colliMotherLV,
@@ -323,15 +324,16 @@ void ESDetectorConstruction::ConstructHorizontalDetectors()
 void ESDetectorConstruction::ConstructSDandField()
 {
    // Sensitive Detectors
-   G4VSensitiveDetector *ExitSD = new ESExitSD("Exit",
-                                               "ExitHitsCollection");
- 
+   G4VSensitiveDetector *exitSD = new ESExitSD("ExitSD",
+                                               "ExitHC");
+   G4SDManager::GetSDMpointer()->AddNewDetector(exitSD);
+   
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
       //if(lv->GetName() != "World" && lv->GetName() != "Air")
       //if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
       if((lv->GetName()).contains("Detector"))
-         SetSensitiveDetector(lv->GetName(), ExitSD);
+         SetSensitiveDetector(lv->GetName(), exitSD);
    }
 
    // Create magnetic field and set it to Tube using the function

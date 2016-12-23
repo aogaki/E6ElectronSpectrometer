@@ -10,7 +10,6 @@
 #include "g4root.hh"
 
 #include "ESEventAction.hpp"
-#include "ESExitHit.hpp"
 
 
 ESEventAction::ESEventAction()
@@ -24,39 +23,41 @@ ESEventAction::ESEventAction()
 ESEventAction::~ESEventAction()
 {}
 
+ESExitHitsCollection *ESEventAction::GetHitsCollection(G4int hcID, const G4Event *event)
+const
+{
+   ESExitHitsCollection *hitsCollection 
+      = static_cast<ESExitHitsCollection *>(
+         event->GetHCofThisEvent()->GetHC(hcID));
+  
+   if ( ! hitsCollection ) {
+      G4ExceptionDescription msg;
+      msg << "Cannot access hitsCollection ID " << hcID; 
+      G4Exception("B4cEventAction::GetHitsCollection()",
+                  "MyCode0003", FatalException, msg);
+   }         
+
+   return hitsCollection;
+}
+
 void ESEventAction::BeginOfEventAction(const G4Event *)
 {
-   if (fHitsCollectionID == -1) {
-      G4SDManager *manager = G4SDManager::GetSDMpointer();
-      fHitsCollectionID = manager->GetCollectionID("Exit/ExitHitsCollection");
-      if (fHitsCollectionID == -1) {
-         G4cout << "Exit/ExitHitsCollection not found" << G4endl;
-         exit(0);
-      }
-   }
 }
 
 void ESEventAction::EndOfEventAction(const G4Event *event)
 {
-   G4HCofThisEvent *hce = event->GetHCofThisEvent();
-   if (!hce) {
-      G4cout << "HCE not found: EndOfEventAction@ESEventAction" << G4endl;
-      exit(0);
-   }
-   ESExitHitsCollection *hitsCollection =
-      static_cast<ESExitHitsCollection *>(hce->GetHC(fHitsCollectionID));
-   if (!hitsCollection) {
-      G4cout << "HC not found: EndOfEventAction@ESEventAction" << G4endl;
-      exit(0);
-   }
-
+   if (fHitsCollectionID == -1)
+      fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("ExitHC");
+   
+   ESExitHitsCollection *hc = GetHitsCollection(fHitsCollectionID, event);
+   
    G4int eventID = event->GetEventID();
 
    G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
 
-   const G4int kHit = hitsCollection->entries();
+   const G4int kHit = hc->entries();
    for (G4int iHit = 0; iHit < kHit; iHit++) {
-      ESExitHit *newHit = (*hitsCollection)[iHit];
+      ESExitHit *newHit = (*hc)[iHit];
 
       anaMan->FillNtupleIColumn(0, 0, eventID); // EventID
 

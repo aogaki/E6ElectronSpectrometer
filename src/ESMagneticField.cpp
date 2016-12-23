@@ -11,9 +11,13 @@
 
 G4Mutex mutexInMF = G4MUTEX_INITIALIZER;
 
+//static G4ThreadLocal TH2D *fHisBx{nullptr};
+
+
 ESMagneticField::ESMagneticField()
    : G4MagneticField(),
-     fFieldManager(nullptr)
+     fFieldManager(nullptr),
+     fHisBx(nullptr)
 {
    fFieldManager = new G4FieldManager();
    fFieldManager->SetDetectorField(this);    
@@ -51,8 +55,8 @@ ESMagneticField::ESMagneticField()
 
 ESMagneticField::~ESMagneticField()
 {
-   delete fHisBx;
    delete fFieldManager;
+   delete fHisBx;
 }
 
 void ESMagneticField::GetFieldValue(const G4double point[4], 
