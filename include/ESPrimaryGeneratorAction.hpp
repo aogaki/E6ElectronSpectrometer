@@ -32,7 +32,6 @@ private:
    void (ESPrimaryGeneratorAction::*GunPointer)();
    G4bool fUseMonoEne;
    G4double fBeamEne;
-   TFile *fNamBeamFile;
    TF1 *fFncNorm;
    TH1D *fHisBeam;
    

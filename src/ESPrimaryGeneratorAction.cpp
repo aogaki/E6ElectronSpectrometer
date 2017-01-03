@@ -44,9 +44,14 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    G4int nPar = 1;
    fParticleGun = new G4ParticleGun(nPar);
 
-   fNamBeamFile = new TFile("Data/NamBeam.root", "READ");
-   fHisBeam = (TH1D*)fNamBeamFile->Get("HisBeam");
-   fFncNorm = (TF1*)fNamBeamFile->Get("FncNorm");
+   TFile *file = new TFile("Data/NamBeam.root", "READ");
+   fHisBeam = (TH1D*)file->Get("HisBeam");
+   fFncNorm = (TF1*)file->Get("FncNorm");
+   fHisBeam->SetDirectory(0);
+   //fFncNorm->SetDirectory(0); // TF1 is not dead after file closed.  But, why?
+   file->Close();
+   delete file;
+   
    Int_t seed = G4UniformRand() * 1000000;
    G4cout << "Seed of PGA = " << seed << G4endl;
    gRandom->SetSeed(seed);
@@ -67,8 +72,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
 
    if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
    else if(fRefFlag) GunPointer = &ESPrimaryGeneratorAction::RefGun;
-   else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
-   //else GunPointer = &ESPrimaryGeneratorAction::NamGun;
+   //else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
+   else GunPointer = &ESPrimaryGeneratorAction::NamGun;
 
    if(fUseZeroAng) AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
    else AngGenPointer = &ESPrimaryGeneratorAction::UniformAng;
@@ -78,13 +83,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
 
 ESPrimaryGeneratorAction::~ESPrimaryGeneratorAction()
 {
-   G4AutoLock lock(&mutexInPGA);
-   
    delete fParticleGun;
    delete fMessenger;
-
-   fNamBeamFile->Close();
-   delete fNamBeamFile;
 }
 
 void ESPrimaryGeneratorAction::MonoEneGun()
@@ -105,6 +105,8 @@ void ESPrimaryGeneratorAction::ZeroAng()
 {
    // Do nothing
    // Using the parameters set in constructor
+   // I wish no overhead to call this function
+   // Check!
 }
 
 void ESPrimaryGeneratorAction::UniformGun()
@@ -115,7 +117,9 @@ void ESPrimaryGeneratorAction::UniformGun()
 
 void ESPrimaryGeneratorAction::NamGun()
 {
+   G4AutoLock lock(&mutexInPGA);
    fBeamEne = fFncNorm->Eval(fHisBeam->GetRandom())*GeV;
+   lock.unlock();
    (this->*AngGenPointer)(); 
 }
 

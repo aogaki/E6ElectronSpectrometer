@@ -41,8 +41,7 @@ const
 }
 
 void ESEventAction::BeginOfEventAction(const G4Event *)
-{
-}
+{}
 
 void ESEventAction::EndOfEventAction(const G4Event *event)
 {
