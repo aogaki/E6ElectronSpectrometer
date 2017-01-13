@@ -8,38 +8,38 @@
 #include "G4Material.hh"
 #include "G4VProcess.hh"
 
-#include "ESExitSD.hpp"
-#include "ESExitHit.hpp"
+#include "ESSD.hpp"
+#include "ESHit.hpp"
 
 
-ESExitSD::ESExitSD(const G4String &name,
-                   const G4String &hitsCollectionName)
+ESSD::ESSD(const G4String &name,
+           const G4String &hitsCollectionName)
    : G4VSensitiveDetector(name)
 {
    collectionName.insert(hitsCollectionName);
 }
 
-ESExitSD::~ESExitSD()
+ESSD::~ESSD()
 {}
 
-void ESExitSD::Initialize(G4HCofThisEvent *hce)
+void ESSD::Initialize(G4HCofThisEvent *hce)
 {
    fHitsCollection
-      = new ESExitHitsCollection(SensitiveDetectorName, collectionName[0]);
+      = new ESHitsCollection(SensitiveDetectorName, collectionName[0]);
 
    G4int hcID
       = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]);
    hce->AddHitsCollection(hcID, fHitsCollection);
 }
 
-G4bool ESExitSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
+G4bool ESSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
 {
-   if(!step->IsLastStepInVolume()) return false; // only the last step
+   //if(!step->IsLastStepInVolume()) return false; // only the last step
    G4Track *track = step->GetTrack();   
    G4int trackID = track->GetTrackID();
    //if(trackID != 1) return false; // only the primal particle
 
-   ESExitHit *newHit = new ESExitHit();
+   ESHit *newHit = new ESHit();
 
    newHit->SetTrackID(trackID);
    
@@ -63,6 +63,9 @@ G4bool ESExitSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
 
    G4ThreeVector momentum =  postStepPoint->GetMomentum();
    newHit->SetMomentum(momentum);
+
+   G4double depositEnergy = step->GetTotalEnergyDeposit();
+   newHit->SetDepositEnergy(depositEnergy);
 
    fHitsCollection->insert(newHit);
    return true;

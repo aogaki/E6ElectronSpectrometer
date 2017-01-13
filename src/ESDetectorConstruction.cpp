@@ -28,7 +28,7 @@
 
 #include "ESDetectorConstruction.hpp"
 #include "ESConstants.hpp"
-#include "ESExitSD.hpp"
+#include "ESSD.hpp"
 #include "ESMagneticField.hpp"
 
 
@@ -62,9 +62,9 @@ ESDetectorConstruction::~ESDetectorConstruction()
    if(!fVacFlag){
       delete fWindowMat;
       delete fAirMat;
-      delete fLANEXMat;
       delete fCollimatorMat;
    }
+   delete fLANEXMat;
    delete fMagnetMat;
 
    delete fMessenger;
@@ -84,9 +84,9 @@ void ESDetectorConstruction::DefineMaterials()
    else{
       fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
       fAirMat = manager->FindOrBuildMaterial("G4_AIR");
-      fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
       fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
    }
+   fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
    fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
    
    // Acrylic C5O2H8
@@ -116,7 +116,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
-   fColliHole = 1.*mm;
+   fColliHole = 4.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
 
    fMagnetH = 381.*mm;  // along Y axis
@@ -215,8 +215,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    if(fDetState == DetState::Real){
       // Not yet implemented
-      //ConstructVerticalDetectors();
-      //ConstructHorizontalDetectors();
+      ConstructBothDetectors();
    }
    else if(fDetState == DetState::Vertical)
       ConstructVerticalDetectors();
@@ -249,7 +248,7 @@ G4LogicalVolume *ESDetectorConstruction::ConstructMagnet()
 
    G4Trd *upperBoxS = new G4Trd ("upperBox", baseW / 2., topW / 2., fMagnetL / 2., fMagnetL / 2., baseH / 2.); 
    G4UnionSolid *magnetS = new G4UnionSolid("Magnet" , baseBoxS, upperBoxS, xRot90deg,
-                                             G4ThreeVector(0., baseH, 0.)); 
+                                            G4ThreeVector(0., baseH, 0.)); 
 
 // side plates of the magnet... 
    G4Box *sidePlateS = new G4Box ("sidePlate", sidePlateT / 2.,  sidePlateH / 2., fMagnetL / 2. );
@@ -261,6 +260,39 @@ G4LogicalVolume *ESDetectorConstruction::ConstructMagnet()
    G4LogicalVolume *magnetLV = new G4LogicalVolume(magnetS, fMagnetMat, "Magnet"); 
 
    return magnetLV;
+}
+
+void ESDetectorConstruction::ConstructBothDetectors()
+{
+   G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
+   
+   G4double LANEX_T = 305.0*um;
+   G4double LANEX_W = 200.*mm;
+   G4double LANEX_L = 2.*m;
+   G4double LANEX_H = 250.*mm + LANEX_T;
+
+   G4Box *LANEXVerS = new G4Box("LANEXDetectorV", LANEX_W / 2., LANEX_H / 2., LANEX_T / 2.);
+   G4LogicalVolume *LANEXVerLV = new G4LogicalVolume(LANEXVerS, fLANEXMat, "LANEXDetectorV");
+   LANEXVerLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4Box *LANEXHorS = new G4Box("LANEXDetectorH", LANEX_W / 2., LANEX_T / 2., LANEX_L / 2.);
+   G4LogicalVolume *LANEXHorLV = new G4LogicalVolume(LANEXHorS, fLANEXMat, "LANEXDetectorH");
+   LANEXHorLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   G4double LANEXVerZPos = -airZPos + fMagnetL + 1000.*mm + LANEX_T / 2.;// The front face is at z = 2m
+   G4double LANEXVerYPos = 100.*mm - LANEX_H / 2.;// The front face is at z = 2m
+   G4ThreeVector LANEXVerPos = G4ThreeVector(0., LANEXVerYPos, LANEXVerZPos);
+   new G4PVPlacement(nullptr, LANEXVerPos, LANEXVerLV, "LANEXDetectorV", motherLV,
+                     false, 0, fCheckOverlap);
+
+   G4double LANEXHorZPos = -airZPos + LANEX_L / 2.;
+   G4double LANEXHorYPos = -150.*mm - LANEX_T / 2.;// The upper face is at y = -150mm
+   G4ThreeVector LANEXHorPos = G4ThreeVector(0., LANEXHorYPos, LANEXHorZPos);
+   new G4PVPlacement(nullptr, LANEXHorPos, LANEXHorLV, "LANEXDetectorH", motherLV,
+                     false, 0, fCheckOverlap);
+
+
 }
 
 void ESDetectorConstruction::ConstructVerticalDetectors()
@@ -324,8 +356,8 @@ void ESDetectorConstruction::ConstructHorizontalDetectors()
 void ESDetectorConstruction::ConstructSDandField()
 {
    // Sensitive Detectors
-   G4VSensitiveDetector *exitSD = new ESExitSD("ExitSD",
-                                               "ExitHC");
+   G4VSensitiveDetector *exitSD = new ESSD("ExitSD",
+                                           "ExitHC");
    G4SDManager::GetSDMpointer()->AddNewDetector(exitSD);
    
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
@@ -337,11 +369,10 @@ void ESDetectorConstruction::ConstructSDandField()
    }
 
    // Create magnetic field and set it to Tube using the function
-   // void G4LogicalVolume::SetFieldManager(G4FieldManager *pFieldMgr, G4bool forceToAllDaughters);
-   ESMagneticField* magneticField = new ESMagneticField();
+   ESMagneticField *magneticField = new ESMagneticField();
    fMagneticFieldLV->SetFieldManager(magneticField->GetFieldManager(), true); 
 
-   G4FieldManager* fieldManager = new G4FieldManager();
+   G4FieldManager *fieldManager = new G4FieldManager();
    fieldManager->SetDetectorField(magneticField);
    fieldManager->CreateChordFinder(magneticField);
    G4bool forceToAllDaughters = true;

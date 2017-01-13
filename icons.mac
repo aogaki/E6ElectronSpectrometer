@@ -27,3 +27,6 @@
 # Perspective/Ortho icons
 /gui/addIcon "Perspective" perspective 
 /gui/addIcon "Orthographic" ortho 
+
+# User defined icon :
+/gui/addIcon "Run beam on" user_icon "/run/beamOn 1" run.png 

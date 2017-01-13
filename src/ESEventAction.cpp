@@ -23,11 +23,11 @@ ESEventAction::ESEventAction()
 ESEventAction::~ESEventAction()
 {}
 
-ESExitHitsCollection *ESEventAction::GetHitsCollection(G4int hcID, const G4Event *event)
+ESHitsCollection *ESEventAction::GetHitsCollection(G4int hcID, const G4Event *event)
 const
 {
-   ESExitHitsCollection *hitsCollection 
-      = static_cast<ESExitHitsCollection *>(
+   ESHitsCollection *hitsCollection 
+      = static_cast<ESHitsCollection *>(
          event->GetHCofThisEvent()->GetHC(hcID));
   
    if ( ! hitsCollection ) {
@@ -48,7 +48,7 @@ void ESEventAction::EndOfEventAction(const G4Event *event)
    if (fHitsCollectionID == -1)
       fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("ExitHC");
    
-   ESExitHitsCollection *hc = GetHitsCollection(fHitsCollectionID, event);
+   ESHitsCollection *hc = GetHitsCollection(fHitsCollectionID, event);
    
    G4int eventID = event->GetEventID();
 
@@ -56,7 +56,7 @@ void ESEventAction::EndOfEventAction(const G4Event *event)
 
    const G4int kHit = hc->entries();
    for (G4int iHit = 0; iHit < kHit; iHit++) {
-      ESExitHit *newHit = (*hc)[iHit];
+      ESHit *newHit = (*hc)[iHit];
 
       anaMan->FillNtupleIColumn(0, 0, eventID); // EventID
 
@@ -85,6 +85,9 @@ void ESEventAction::EndOfEventAction(const G4Event *event)
       G4String vertexName = newHit->GetVertexName();
       anaMan->FillNtupleSColumn(0, 11, vertexName);
       
+      G4double depositEnergy = newHit->GetDepositEnergy();
+      anaMan->FillNtupleDColumn(0, 12, depositEnergy);
+
       anaMan->AddNtupleRow(0);
    }
 

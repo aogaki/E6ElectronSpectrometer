@@ -68,6 +68,7 @@ private:
 
    // Detectors (LANEX and Air, Air records incident LANEX)
    DetState fDetState;
+   void ConstructBothDetectors();
    void ConstructHorizontalDetectors();
    void ConstructVerticalDetectors();
    

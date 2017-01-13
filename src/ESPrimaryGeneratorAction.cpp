@@ -72,8 +72,8 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
 
    if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
    else if(fRefFlag) GunPointer = &ESPrimaryGeneratorAction::RefGun;
-   //else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
-   else GunPointer = &ESPrimaryGeneratorAction::NamGun;
+   else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
+   //else GunPointer = &ESPrimaryGeneratorAction::NamGun;
 
    if(fUseZeroAng) AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
    else AngGenPointer = &ESPrimaryGeneratorAction::UniformAng;

@@ -41,6 +41,8 @@ void ESRunAction::BeginOfRunAction(const G4Run *)
 
    anaMan->CreateNtupleSColumn(0, "VertexName");
 
+   anaMan->CreateNtupleDColumn(0, "DepositEnergy");
+
    // Init parameters
    anaMan->CreateNtuple("InitPar", "Initial Parameters");
    anaMan->CreateNtupleIColumn(1, "EventID");

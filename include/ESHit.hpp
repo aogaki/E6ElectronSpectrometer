@@ -1,5 +1,5 @@
-#ifndef ESExitHit_h
-#define ESExitHit_h 1
+#ifndef ESHit_h
+#define ESHit_h 1
 
 #include "G4VHit.hh"
 #include "G4THitsCollection.hh"
@@ -8,14 +8,14 @@
 #include "G4ThreeVector.hh"
 
 
-class ESExitHit : public G4VHit
+class ESHit : public G4VHit
 {
 public:
-   ESExitHit();
-   virtual ~ESExitHit();
-   ESExitHit(const ESExitHit &right);
-   const ESExitHit &operator=(const ESExitHit &right);
-   int operator==(const ESExitHit &right) const;
+   ESHit();
+   virtual ~ESHit();
+   ESHit(const ESHit &right);
+   const ESHit &operator=(const ESHit &right);
+   int operator==(const ESHit &right) const;
 
    inline void *operator new(size_t);
    inline void  operator delete(void *);
@@ -29,6 +29,9 @@ public:
 
    void SetKineticEnergy(G4double ene) {fKineticEnergy = ene;};
    G4double GetKineticEnergy() {return fKineticEnergy;};
+
+   void SetDepositEnergy(G4double ene) {fDepositEnergy = ene;};
+   G4double GetDepositEnergy() {return fDepositEnergy;};
 
    void SetPosition(G4ThreeVector pos) {fPosition = pos;};
    G4ThreeVector GetPosition() {return fPosition;};
@@ -49,6 +52,7 @@ private:
    G4int fTrackID;
    G4int fPDGCode;
    G4double fKineticEnergy;
+   G4double fDepositEnergy;
    G4ThreeVector fPosition;
    G4ThreeVector fMomentum;
    G4int fIsLastStep;
@@ -56,20 +60,20 @@ private:
    G4String fVertexName;
 };
 
-typedef G4THitsCollection<ESExitHit> ESExitHitsCollection;
+typedef G4THitsCollection<ESHit> ESHitsCollection;
 
-extern G4ThreadLocal G4Allocator<ESExitHit> *ESExitHitAllocator;
+extern G4ThreadLocal G4Allocator<ESHit> *ESHitAllocator;
 
-inline void *ESExitHit::operator new(size_t)
+inline void *ESHit::operator new(size_t)
 {
-   if (!ESExitHitAllocator)
-      ESExitHitAllocator = new G4Allocator<ESExitHit>;
-   return (void *)ESExitHitAllocator->MallocSingle();
+   if (!ESHitAllocator)
+      ESHitAllocator = new G4Allocator<ESHit>;
+   return (void *)ESHitAllocator->MallocSingle();
 }
 
-inline void ESExitHit::operator delete(void *hit)
+inline void ESHit::operator delete(void *hit)
 {
-   ESExitHitAllocator->FreeSingle((ESExitHit *) hit);
+   ESHitAllocator->FreeSingle((ESHit *) hit);
 }
 
 #endif

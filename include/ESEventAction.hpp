@@ -4,7 +4,7 @@
 #include "G4UserEventAction.hh"
 #include "globals.hh"
 
-#include "ESExitHit.hpp"
+#include "ESHit.hpp"
 
 class ESEventAction : public G4UserEventAction
 {
@@ -16,7 +16,7 @@ public:
    virtual void EndOfEventAction(const G4Event *);
 
 private:
-   ESExitHitsCollection *GetHitsCollection(G4int hcID, const G4Event *event) const;
+   ESHitsCollection *GetHitsCollection(G4int hcID, const G4Event *event) const;
    
    G4int fHitsCollectionID;
 };
