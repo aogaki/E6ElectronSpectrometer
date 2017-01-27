@@ -42,6 +42,7 @@ namespace {
              << " -z zero divergence angle beam \n"
              << " -v only vacuum with magnetic field \n"
              << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
+             << " -p [0: no mirror, 1: primary beam hit mirror, 2: not hit] \n"
              << " -d [0: real setup of LANEX, 1: large horizontal plane, 2: large vertical plane] \n"
              << " -r Making reference data for callibration of LANEX position"
              << G4endl;
@@ -80,6 +81,7 @@ int main(int argc, char **argv)
    G4bool refFlag = false;
    G4double beamEne = 9.;
    ColliState colliState = ColliState::No;
+   MirrorState mirrorState = MirrorState::No;
    DetState detState = DetState::Real;
    
    for (G4int i = 1; i < argc; i++) {
@@ -105,6 +107,16 @@ int main(int argc, char **argv)
          if(colliFlag == 0) colliState = ColliState::No;
          else if(colliFlag == 1) colliState = ColliState::InAir;
          else if(colliFlag == 2) colliState = ColliState::InVac;
+         else {
+            PrintUsage();
+            return 1;
+         }
+      }
+      else if (G4String(argv[i]) == "-p"){
+         G4int mirrorFlag = atoi(argv[++i]);
+         if(mirrorFlag == 0) mirrorState = MirrorState::No;
+         else if(mirrorFlag == 1) mirrorState = MirrorState::OnBeam;
+         else if(mirrorFlag == 2) mirrorState = MirrorState::OffBeam;
          else {
             PrintUsage();
             return 1;
@@ -148,7 +160,7 @@ int main(int argc, char **argv)
    // Set mandatory initialization classes
    //
    // Detector construction
-   runManager->SetUserInitialization(new ESDetectorConstruction(colliState, detState, vacFlag));
+   runManager->SetUserInitialization(new ESDetectorConstruction(mirrorState, colliState, detState, vacFlag));
 
    // Physics list
    //G4VModularPhysicsList *physicsList = new FTFP_BERT();

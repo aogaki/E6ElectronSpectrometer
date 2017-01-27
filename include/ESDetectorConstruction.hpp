@@ -22,7 +22,7 @@
 class ESDetectorConstruction : public G4VUserDetectorConstruction
 {
 public:
-   ESDetectorConstruction(ColliState colliState, DetState detState, G4bool vacFlag);
+   ESDetectorConstruction(MirrorState mirrorState, ColliState colliState, DetState detState, G4bool vacFlag);
    virtual ~ESDetectorConstruction();
 
    virtual G4VPhysicalVolume *Construct();
@@ -41,6 +41,8 @@ private:
    G4Material *fLANEXMat;
    G4Material *fCollimatorMat;
    G4Material *fMagnetMat;
+   G4Material *fMirrorGlassMat;
+   G4Material *fMirrorAlMat;
    G4bool fVacFlag;
    
    // Geometry parameters
@@ -57,6 +59,8 @@ private:
    G4double fColliT;
    G4double fColliHole;
 
+   MirrorState fMirrorState;
+   
    G4double fMagnetH;
    G4double fMagnetW;
    G4double fMagnetL;
@@ -71,6 +75,9 @@ private:
    void ConstructBothDetectors();
    void ConstructHorizontalDetectors();
    void ConstructVerticalDetectors();
+
+   // Mirror
+   void ConstructMirror();
    
    // For command
    void DefineCommands();

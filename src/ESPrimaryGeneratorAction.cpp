@@ -111,7 +111,8 @@ void ESPrimaryGeneratorAction::ZeroAng()
 
 void ESPrimaryGeneratorAction::UniformGun()
 {
-   fBeamEne = (9 * G4UniformRand() + 1)*GeV;
+   //fBeamEne = (9 * G4UniformRand() + 1)*GeV;
+   fBeamEne = (4 * G4UniformRand() + 1)*GeV;
    (this->*AngGenPointer)(); 
 }
 

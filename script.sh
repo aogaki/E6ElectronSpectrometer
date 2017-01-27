@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "/run/beamOn 1000000" > tmp.mac
+echo "/run/beamOn 100000" > tmp.mac
 
 
 for ene in 1 2 3 4 5 6 7 8 9 10
