@@ -32,8 +32,9 @@ const
   
    if ( ! hitsCollection ) {
       G4ExceptionDescription msg;
-      msg << "Cannot access hitsCollection ID " << hcID; 
-      G4Exception("B4cEventAction::GetHitsCollection()",
+      msg << "Cannot access hitsCollection ID " << hcID;
+      // check how to use G4Exception
+      G4Exception("ESEventAction::GetHitsCollection()",
                   "MyCode0003", FatalException, msg);
    }         
 
@@ -46,7 +47,7 @@ void ESEventAction::BeginOfEventAction(const G4Event *)
 void ESEventAction::EndOfEventAction(const G4Event *event)
 {
    if (fHitsCollectionID == -1)
-      fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("ExitHC");
+      fHitsCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("HC");
    
    ESHitsCollection *hc = GetHitsCollection(fHitsCollectionID, event);
    
@@ -87,6 +88,15 @@ void ESEventAction::EndOfEventAction(const G4Event *event)
       
       G4double depositEnergy = newHit->GetDepositEnergy();
       anaMan->FillNtupleDColumn(0, 12, depositEnergy);
+
+      G4double incidentEnergy = newHit->GetIncidentEnergy();
+      anaMan->FillNtupleDColumn(0, 13, incidentEnergy);
+
+      G4int isLast = newHit->GetIsLast();
+      anaMan->FillNtupleIColumn(0, 14, isLast);
+
+      G4double time = newHit->GetTime();
+      anaMan->FillNtupleDColumn(0, 15, time);
 
       anaMan->AddNtupleRow(0);
    }

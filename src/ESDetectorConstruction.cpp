@@ -63,11 +63,11 @@ ESDetectorConstruction::ESDetectorConstruction(MirrorState mirrorState, ColliSta
 ESDetectorConstruction::~ESDetectorConstruction()
 {
    delete fVacuumMat;
+   delete fLANEXMat;
    if(!fVacFlag){
       delete fWindowMat;
       delete fAirMat;
       delete fCollimatorMat;
-      delete fLANEXMat;
       delete fMagnetMat;
       delete fMirrorGlassMat;
       delete fMirrorAlMat;
@@ -85,17 +85,18 @@ void ESDetectorConstruction::DefineMaterials()
 
    // NIST database materials
    fVacuumMat = manager->FindOrBuildMaterial("G4_Galactic");
+   fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
+   //fLANEXMat = fVacuumMat;
    if(fVacFlag)
-      fWindowMat = fAirMat = fLANEXMat = fCollimatorMat
-                 = fMagnetMat = fMirrorGlassMat = fMirrorAlMat = fVacuumMat;
+      fWindowMat = fAirMat = fCollimatorMat = fMagnetMat
+                 = fMirrorGlassMat = fMirrorAlMat = fVacuumMat;
    else{
       fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
       fAirMat = manager->FindOrBuildMaterial("G4_AIR");
       fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
-   fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
-   fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
-   fMirrorGlassMat = manager->FindOrBuildMaterial("G4_GLASS_PLATE");
-   fMirrorAlMat = manager->FindOrBuildMaterial("G4_Al");
+      fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+      fMirrorGlassMat = manager->FindOrBuildMaterial("G4_GLASS_PLATE");
+      fMirrorAlMat = manager->FindOrBuildMaterial("G4_Al");
    }
    
    // Acrylic C5O2H8
@@ -134,6 +135,7 @@ void ESDetectorConstruction::DefineGeometries()
    fMagnetGap = 20.*mm;      // ... X 
    fMagnetDepth = 70.*mm;   // ... Y 
 
+   fLANEXT = 305.*um;
 }
 
 G4VPhysicalVolume *ESDetectorConstruction::Construct()
@@ -231,6 +233,20 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       ConstructHorizontalDetectors();
 
    if(fMirrorState != MirrorState::No) ConstructMirror();
+
+   // Front LANEX
+   G4double frontSize = 100.*mm;
+   G4Box *frontS = new G4Box("FrontLANEX", frontSize / 2., frontSize / 2., fLANEXT / 2.);
+   G4LogicalVolume *frontLV = new G4LogicalVolume(frontS, fLANEXMat, "FrontLANEX");
+   frontLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double frontZPos = -airZPos - 100.*mm;
+   G4ThreeVector frontPos = G4ThreeVector(0., 0., frontZPos);
+   G4RotationMatrix *frontRot = new G4RotationMatrix();
+   frontRot->rotateY(45.0*deg);
+   new G4PVPlacement(frontRot, frontPos, frontLV, "FrontLANEX", airLV,
+                     false, 0, fCheckOverlap);
+
    
    fMagneticFieldLV = worldLV;
    
@@ -276,28 +292,27 @@ void ESDetectorConstruction::ConstructBothDetectors()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    
-   G4double LANEX_T = 305.0*um;
    G4double LANEX_W = 200.*mm;
    G4double LANEX_L = 2.*m;
-   G4double LANEX_H = 250.*mm + LANEX_T;
+   G4double LANEX_H = 250.*mm + fLANEXT;
 
-   G4Box *LANEXVerS = new G4Box("LANEXDetectorV", LANEX_W / 2., LANEX_H / 2., LANEX_T / 2.);
+   G4Box *LANEXVerS = new G4Box("LANEXDetectorV", LANEX_W / 2., LANEX_H / 2., fLANEXT / 2.);
    G4LogicalVolume *LANEXVerLV = new G4LogicalVolume(LANEXVerS, fLANEXMat, "LANEXDetectorV");
    LANEXVerLV->SetVisAttributes(G4Colour::Yellow());
 
-   G4Box *LANEXHorS = new G4Box("LANEXDetectorH", LANEX_W / 2., LANEX_T / 2., LANEX_L / 2.);
+   G4Box *LANEXHorS = new G4Box("LANEXDetectorH", LANEX_W / 2., fLANEXT / 2., LANEX_L / 2.);
    G4LogicalVolume *LANEXHorLV = new G4LogicalVolume(LANEXHorS, fLANEXMat, "LANEXDetectorH");
    LANEXHorLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   G4double LANEXVerZPos = -airZPos + fMagnetL + 1000.*mm + LANEX_T / 2.;// The front face is at z = 2m
+   G4double LANEXVerZPos = -airZPos + fMagnetL + 1000.*mm + fLANEXT / 2.;// The front face is at z = 2m
    G4double LANEXVerYPos = 100.*mm - LANEX_H / 2.;// The front face is at z = 2m
    G4ThreeVector LANEXVerPos = G4ThreeVector(0., LANEXVerYPos, LANEXVerZPos);
    new G4PVPlacement(nullptr, LANEXVerPos, LANEXVerLV, "LANEXDetectorV", motherLV,
                      false, 0, fCheckOverlap);
 
    G4double LANEXHorZPos = -airZPos + LANEX_L / 2.;
-   G4double LANEXHorYPos = -150.*mm - LANEX_T / 2.;// The upper face is at y = -150mm
+   G4double LANEXHorYPos = -150.*mm - fLANEXT / 2.;// The upper face is at y = -150mm
    G4ThreeVector LANEXHorPos = G4ThreeVector(0., LANEXHorYPos, LANEXHorZPos);
    new G4PVPlacement(nullptr, LANEXHorPos, LANEXHorLV, "LANEXDetectorH", motherLV,
                      false, 0, fCheckOverlap);
@@ -400,19 +415,28 @@ void ESDetectorConstruction::ConstructMirror()
 
 void ESDetectorConstruction::ConstructSDandField()
 {
+   ConstructSD();
+   ConstructBField();
+}
+
+void ESDetectorConstruction::ConstructSD()
+{   
    // Sensitive Detectors
-   G4VSensitiveDetector *exitSD = new ESSD("ExitSD",
-                                           "ExitHC");
-   G4SDManager::GetSDMpointer()->AddNewDetector(exitSD);
+   G4VSensitiveDetector *SD = new ESSD("SD",
+                                       "HC");
+   G4SDManager::GetSDMpointer()->AddNewDetector(SD);
    
    G4LogicalVolumeStore *lvStore = G4LogicalVolumeStore::GetInstance();
    for(auto &&lv: *lvStore){
       //if(lv->GetName() != "World" && lv->GetName() != "Air")
       //if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
-      if((lv->GetName()).contains("Detector"))
-         SetSensitiveDetector(lv->GetName(), exitSD);
+      if(lv->GetName().contains("LANEX") || lv->GetName().contains("Window"))
+         SetSensitiveDetector(lv->GetName(), SD);
    }
+}
 
+void ESDetectorConstruction::ConstructBField()
+{
    // Create magnetic field and set it to Tube using the function
    ESMagneticField *magneticField = new ESMagneticField();
    fMagneticFieldLV->SetFieldManager(magneticField->GetFieldManager(), true); 
@@ -426,7 +450,6 @@ void ESDetectorConstruction::ConstructSDandField()
    // Register the field and its manager for deleting
    G4AutoDelete::Register(magneticField);
    G4AutoDelete::Register(fieldManager);
-
 }
 
 void ESDetectorConstruction::DefineCommands()

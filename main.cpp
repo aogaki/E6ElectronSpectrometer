@@ -16,6 +16,7 @@
 #ifdef G4VIS_USE
 #include "G4VisExecutive.hh"
 #include "G4TrajectoryParticleFilter.hh"
+//#include "G4BlineTracer.hh"
 #endif
 
 #ifdef G4UI_USE
@@ -53,6 +54,7 @@ unsigned int GetRandomSeed()
 {
    // Using /dev/urandom for generating random number.
    // If it is not, I have to think solution.
+   // Using std::random_device of C++11 is better
    unsigned int seed;
    std::ifstream file("/dev/urandom", std::ios::binary);
    if (file.is_open()) {
@@ -61,7 +63,7 @@ unsigned int GetRandomSeed()
       memblock = new char[size];
       file.read(memblock, size);
       file.close();
-      seed = *reinterpret_cast<int *>(memblock);
+      seed = *reinterpret_cast<unsigned int *>(memblock);
       delete[] memblock;
    } else {
       seed = 0;
@@ -138,14 +140,13 @@ int main(int argc, char **argv)
       }
    }
    
-   // Remove?
    // Choose the Random engine
-   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine());
+   // Need both?
    unsigned int seed = GetRandomSeed();
    if (seed == 0) seed = time(0);
    G4cout << "\nseed = " << seed << G4endl;
-   CLHEP::HepRandom::setTheSeed(seed);
-   G4Random::setTheSeed(seed);
+   CLHEP::HepRandom::setTheEngine(new CLHEP::MTwistEngine(seed));
+   G4Random::setTheEngine(new CLHEP::MTwistEngine(seed));
 
    // Construct the default run manager
 #ifdef G4MULTITHREADED

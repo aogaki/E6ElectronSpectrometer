@@ -112,7 +112,7 @@ void ESPrimaryGeneratorAction::ZeroAng()
 void ESPrimaryGeneratorAction::UniformGun()
 {
    //fBeamEne = (9 * G4UniformRand() + 1)*GeV;
-   fBeamEne = (4 * G4UniformRand() + 1)*GeV;
+   fBeamEne = (0.1 * G4UniformRand())*GeV;
    (this->*AngGenPointer)(); 
 }
 
@@ -139,7 +139,7 @@ void ESPrimaryGeneratorAction::GeneratePrimaries(G4Event *event)
    fParticleGun->SetParticleEnergy(fBeamEne);
    fParticleGun->GeneratePrimaryVertex(event);
 
-   if(fRefFlag) fBeamEne += 1.*MeV;
+   if(fRefFlag) fBeamEne += 100.*MeV;
    
    G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
    anaMan->FillNtupleIColumn(1, 0, event->GetEventID());

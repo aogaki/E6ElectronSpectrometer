@@ -48,9 +48,14 @@ ESMagneticField::ESMagneticField()
    fYMax = 35.*mm;
    fZMin = fHisBx->GetXaxis()->GetXmin()*mm;
    fZMax = fHisBx->GetXaxis()->GetXmax()*mm;
+   //fZMin = -100.*mm;
+   //fZMax = 1000.*mm;
 
    // cut fYMax due to iron york
    fYMax = 35.*mm;
+
+   G4cout << fZMin <<"\t"<< fZMax << G4endl;
+   //exit(0);
 }
 
 ESMagneticField::~ESMagneticField()
@@ -63,12 +68,11 @@ void ESMagneticField::GetFieldValue(const G4double point[4],
                                     G4double* bField) const
 {
    bField[0] = bField[1] = bField[2] = 0.;
-   
+
    if(fXMin < point[0] && point[0] < fXMax &&
       fYMin < point[1] && point[1] < fYMax &&
       fZMin < point[2] && point[2] < fZMax)
       bField[0] = fHisBx->Interpolate(point[2], point[1]);
-
 }
 
 G4FieldManager*  ESMagneticField::GetFieldManager() const

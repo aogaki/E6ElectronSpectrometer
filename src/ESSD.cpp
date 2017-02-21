@@ -45,12 +45,21 @@ G4bool ESSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
    
    G4ParticleDefinition *particle = track->GetDefinition();
    G4int pdgCode = particle->GetPDGEncoding();
+   //if(pdgCode != 22) return false;
    newHit->SetPDGCode(pdgCode);
 
+   G4int isLast = step->IsLastStepInVolume();
+   newHit->SetIsLast(isLast);
+      
    G4StepPoint *preStepPoint = step->GetPreStepPoint();
    G4String volumeName = preStepPoint->GetPhysicalVolume()->GetName();
    newHit->SetVolumeName(volumeName);
 
+   if(preStepPoint->GetStepStatus() == fGeomBoundary){
+      G4double incidentEnergy = preStepPoint->GetKineticEnergy();
+      newHit->SetIncidentEnergy(incidentEnergy);
+   }
+   
    G4String vertexName = track->GetLogicalVolumeAtVertex()->GetName();
    newHit->SetVertexName(vertexName);
 
@@ -66,6 +75,9 @@ G4bool ESSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
 
    G4double depositEnergy = step->GetTotalEnergyDeposit();
    newHit->SetDepositEnergy(depositEnergy);
+
+   G4double time = postStepPoint->GetGlobalTime();
+   newHit->SetTime(time);
 
    fHitsCollection->insert(newHit);
    return true;

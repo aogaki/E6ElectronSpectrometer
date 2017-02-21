@@ -66,6 +66,8 @@ private:
    G4double fMagnetL;
    G4double fMagnetGap;
    G4double fMagnetDepth;
+
+   G4double fLANEXT;
    
    // Magnet
    G4LogicalVolume *ConstructMagnet();
@@ -88,6 +90,9 @@ private:
    G4VPhysicalVolume *fWindowPV;
    G4VPhysicalVolume *fAirPV;
 
+   // For field
+   void ConstructSD();
+   void ConstructBField();
    
    std::vector<G4VisAttributes *> fVisAttributes;
 

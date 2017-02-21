@@ -30,6 +30,9 @@ public:
    void SetKineticEnergy(G4double ene) {fKineticEnergy = ene;};
    G4double GetKineticEnergy() {return fKineticEnergy;};
 
+   void SetIncidentEnergy(G4double ene) {fIncidentEnergy = ene;};
+   G4double GetIncidentEnergy() {return fIncidentEnergy;};
+
    void SetDepositEnergy(G4double ene) {fDepositEnergy = ene;};
    G4double GetDepositEnergy() {return fDepositEnergy;};
 
@@ -48,11 +51,16 @@ public:
    void SetVertexName(G4String vertexName) {fVertexName = vertexName;};
    G4String GetVertexName() {return fVertexName;};
 
+   void SetTime(G4double time) {fTime = time;};
+   G4double GetTime() {return fTime;};
+
 private:
    G4int fTrackID;
    G4int fPDGCode;
    G4double fKineticEnergy;
+   G4double fIncidentEnergy;
    G4double fDepositEnergy;
+   G4double fTime;
    G4ThreeVector fPosition;
    G4ThreeVector fMomentum;
    G4int fIsLastStep;
