@@ -46,6 +46,7 @@ namespace {
              << " -p [0: no mirror, 1: primary beam hit mirror, 2: not hit] \n"
              << " -d [0: real setup of LANEX, 1: large horizontal plane, 2: large vertical plane] \n"
              << " -r Making reference data for callibration of LANEX position"
+             << " -w Using wide beam (3.5mrad)"
              << G4endl;
    }
 }
@@ -77,32 +78,34 @@ int main(int argc, char **argv)
    // Too much arguments...
    G4String macro = "";
    G4bool showAll = false;
-   G4bool useMonoEne = false;
-   G4bool useZeroAng = false;
    G4bool vacFlag = false;
-   G4bool refFlag = false;
-   G4double beamEne = 9.;
+   G4double beamEne = 0.;
+   G4bool zeroAngFlag = false;
    ColliState colliState = ColliState::No;
    MirrorState mirrorState = MirrorState::No;
    DetState detState = DetState::Real;
+   BeamState beamState = BeamState::Normal;
    
    for (G4int i = 1; i < argc; i++) {
       if (G4String(argv[i]) == "-m")
          macro = argv[++i];
       else if (G4String(argv[i]) == "-a")
          showAll = true;
+      else if (G4String(argv[i]) == "-w")
+         beamState = BeamState::Wide;
       else if (G4String(argv[i]) == "-e"){
-         useMonoEne = true;
+         beamState = BeamState::Mono;
          beamEne = std::stod(argv[++i]);
       }
-      else if (G4String(argv[i]) == "-z")
-         useZeroAng = true;
+      else if (G4String(argv[i]) == "-z"){
+         beamState = BeamState::ZeroAng;
+         zeroAngFlag = true;
+      }
       else if (G4String(argv[i]) == "-v")
          vacFlag = true;
       else if (G4String(argv[i]) == "-r"){
-         useZeroAng = true;
          vacFlag = true;
-         refFlag = true;
+         beamState = BeamState::Reference;
       }
       else if (G4String(argv[i]) == "-c"){
          G4int colliFlag = atoi(argv[++i]);
@@ -129,6 +132,7 @@ int main(int argc, char **argv)
          if(detFlag == 0) detState = DetState::Real;
          else if(detFlag == 1) detState = DetState::Horizontal;
          else if(detFlag == 2) detState = DetState::Vertical;
+         else if(detFlag == 3) detState = DetState::NoFront;
          else {
             PrintUsage();
             return 1;
@@ -139,6 +143,8 @@ int main(int argc, char **argv)
          return 1;
       }
    }
+
+   if(zeroAngFlag == true && beamEne > 0.) beamState = BeamState::MonoZero;
    
    // Choose the Random engine
    // Need both?
@@ -151,7 +157,7 @@ int main(int argc, char **argv)
    // Construct the default run manager
 #ifdef G4MULTITHREADED
    G4MTRunManager *runManager = new G4MTRunManager();
-   if(refFlag) runManager->SetNumberOfThreads(1);
+   if(beamState == BeamState::Reference) runManager->SetNumberOfThreads(1);
    else runManager->SetNumberOfThreads(G4Threading::G4GetNumberOfCores());
    //runManager->SetNumberOfThreads(1);
 #else
@@ -173,7 +179,7 @@ int main(int argc, char **argv)
    runManager->SetUserInitialization(physicsList);
 
    // Primary generator action and User action intialization
-   runManager->SetUserInitialization(new ESActionInitialization(useMonoEne, beamEne, useZeroAng, refFlag));
+   runManager->SetUserInitialization(new ESActionInitialization(beamState, beamEne));
 
    // Initialize G4 kernel
    //

@@ -6,6 +6,8 @@
 #include "G4ThreeVector.hh"
 #include "G4Threading.hh"
 
+#include "ESConstants.hpp"
+
 
 class G4Event;
 class G4ParticleGun;
@@ -18,7 +20,7 @@ class TFile;
 class ESPrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 {
 public:
-   ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne, G4bool useZeroAng, G4bool refFlag);
+   ESPrimaryGeneratorAction(BeamState beam, G4double beamEne);
    virtual ~ESPrimaryGeneratorAction();
 
    virtual void GeneratePrimaries(G4Event *);
@@ -26,26 +28,24 @@ public:
 private:
    G4ParticleGun *fParticleGun;
 
+   BeamState fBeamState;
+   G4double fBeamEne;
+
    void MonoEneGun();
    void UniformGun();
+   void ReferenceGun();
    void NamGun();
    void (ESPrimaryGeneratorAction::*GunPointer)();
-   G4bool fUseMonoEne;
-   G4double fBeamEne;
    TF1 *fFncNorm;
    TH1D *fHisBeam;
    
    void ZeroAng();
    void UniformAng();
    void (ESPrimaryGeneratorAction::*AngGenPointer)();
-   G4bool fUseZeroAng;
    G4ThreeVector fParVec;   
    G4double fThetaMax;
    G4double fCosMax;
 
-   void RefGun();
-   G4bool fRefFlag;
-   
    // Commands
    void DefineCommands();
    G4GenericMessenger *fMessenger;

@@ -21,22 +21,18 @@
 #include "G4GenericMessenger.hh"
 
 #include "ESPrimaryGeneratorAction.hpp"
-#include "ESConstants.hpp"
 
 
 static G4int nEveInPGA = 0; // Global variable change to local? 
 G4Mutex mutexInPGA = G4MUTEX_INITIALIZER;
 
-ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double beamEne,
-                                                   G4bool useZeroAng, G4bool refFlag)
+ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(BeamState beam, G4double beamEne)
    : G4VUserPrimaryGeneratorAction(),
      fParticleGun(nullptr),
-     fUseMonoEne(useMonoEne),
+     fBeamState(beam),
      fBeamEne(beamEne*GeV),
      fFncNorm(nullptr),
      fHisBeam(nullptr),
-     fUseZeroAng(useZeroAng),
-     fRefFlag(refFlag),
      fMessenger(nullptr)
 {
    G4AutoLock lock(&mutexInPGA);
@@ -51,16 +47,21 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    //fFncNorm->SetDirectory(0); // TF1 is not dead after file closed.  But, why?
    file->Close();
    delete file;
-   
+
+   // Each thread got each random generatot.  It works.
+   // But, using /dev/urand is more better?
    Int_t seed = G4UniformRand() * 1000000;
    G4cout << "Seed of PGA = " << seed << G4endl;
    gRandom->SetSeed(seed);
    
    fZPosition = kSourceZPos;
-   fThetaMax = 1.5*mrad;
+   if(fBeamState == BeamState::Wide) fThetaMax = 3.5*mrad;
+   //fThetaMax = atan((kMagnetGap / 2.) / -kSourceZPos);
+   else fThetaMax = 1.5*mrad; // zero angle and reference are set later
+   
    fCosMax = cos(fThetaMax);
 
-   if(fRefFlag) fBeamEne = 100.*MeV;
+   if(fBeamState == BeamState::Reference) fBeamEne = 0.;
    
    G4ParticleTable *parTable = G4ParticleTable::GetParticleTable();
    G4ParticleDefinition *electron = parTable->FindParticle("e-");
@@ -70,12 +71,14 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(G4bool useMonoEne, G4double b
    fParticleGun->SetParticleMomentumDirection(fParVec);
    fParticleGun->SetParticleEnergy(fBeamEne);
 
-   if(fUseMonoEne) GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
-   else if(fRefFlag) GunPointer = &ESPrimaryGeneratorAction::RefGun;
+   if(fBeamState == BeamState::Mono || fBeamState == BeamState::MonoZero)
+      GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
+   else if(fBeamState == BeamState::Reference) GunPointer = &ESPrimaryGeneratorAction::ReferenceGun;
    else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
    //else GunPointer = &ESPrimaryGeneratorAction::NamGun;
 
-   if(fUseZeroAng) AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
+   if(fBeamState == BeamState::ZeroAng || fBeamState == BeamState::MonoZero)
+      AngGenPointer = &ESPrimaryGeneratorAction::ZeroAng;
    else AngGenPointer = &ESPrimaryGeneratorAction::UniformAng;
 
    DefineCommands();
@@ -94,13 +97,6 @@ void ESPrimaryGeneratorAction::MonoEneGun()
    (this->*AngGenPointer)(); 
 }
 
-void ESPrimaryGeneratorAction::RefGun()
-{
-   // Do nothing
-   // After shooting, energy will adding 1 MeV
-   (this->*AngGenPointer)(); 
-}
-
 void ESPrimaryGeneratorAction::ZeroAng()
 {
    // Do nothing
@@ -112,8 +108,13 @@ void ESPrimaryGeneratorAction::ZeroAng()
 void ESPrimaryGeneratorAction::UniformGun()
 {
    //fBeamEne = (9 * G4UniformRand() + 1)*GeV;
-   fBeamEne = (0.1 * G4UniformRand())*GeV;
+   fBeamEne = (10. * G4UniformRand())*GeV;
    (this->*AngGenPointer)(); 
+}
+
+void ESPrimaryGeneratorAction::ReferenceGun()
+{
+   fBeamEne += 100.*MeV;
 }
 
 void ESPrimaryGeneratorAction::NamGun()
@@ -138,8 +139,6 @@ void ESPrimaryGeneratorAction::GeneratePrimaries(G4Event *event)
    fParticleGun->SetParticleMomentumDirection(fParVec);
    fParticleGun->SetParticleEnergy(fBeamEne);
    fParticleGun->GeneratePrimaryVertex(event);
-
-   if(fRefFlag) fBeamEne += 100.*MeV;
    
    G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
    anaMan->FillNtupleIColumn(1, 0, event->GetEventID());

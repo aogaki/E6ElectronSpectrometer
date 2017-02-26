@@ -132,10 +132,11 @@ void ESDetectorConstruction::DefineGeometries()
    fMagnetH = 381.*mm;  // along Y axis
    fMagnetW = 392.*mm;   // along X axis
    fMagnetL = 1000.*mm; // along Z
-   fMagnetGap = 20.*mm;      // ... X 
+   fMagnetGap = kMagnetGap;      // ... X 
    fMagnetDepth = 70.*mm;   // ... Y 
 
    fLANEXT = 305.*um;
+   fLANEXW = 100.*mm;
 }
 
 G4VPhysicalVolume *ESDetectorConstruction::Construct()
@@ -224,7 +225,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
                         false, 0, fCheckOverlap);
    }
 
-   if(fDetState == DetState::Real){
+   if(fDetState == DetState::Real || fDetState == DetState::NoFront){
       ConstructBothDetectors();
    }
    else if(fDetState == DetState::Vertical)
@@ -234,23 +235,51 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    if(fMirrorState != MirrorState::No) ConstructMirror();
 
-   // Front LANEX
-   G4double frontSize = 100.*mm;
-   G4Box *frontS = new G4Box("FrontLANEX", frontSize / 2., frontSize / 2., fLANEXT / 2.);
-   G4LogicalVolume *frontLV = new G4LogicalVolume(frontS, fLANEXMat, "FrontLANEX");
-   frontLV->SetVisAttributes(G4Colour::Yellow());
+   if(fDetState != DetState::NoFront) ConstructFront();
 
-   G4double frontZPos = -airZPos - 100.*mm;
-   G4ThreeVector frontPos = G4ThreeVector(0., 0., frontZPos);
-   G4RotationMatrix *frontRot = new G4RotationMatrix();
-   frontRot->rotateY(45.0*deg);
-   new G4PVPlacement(frontRot, frontPos, frontLV, "FrontLANEX", airLV,
-                     false, 0, fCheckOverlap);
+   ConstructConverter();
 
    
    fMagneticFieldLV = worldLV;
    
    return worldPV;
+}
+
+void ESDetectorConstruction::ConstructFront()
+{
+   // Front LANEX
+   G4double frontSize = 50.*mm;
+   G4Box *frontS = new G4Box("FrontLANEX", frontSize / 2., frontSize / 2., fLANEXT / 2.);
+   G4LogicalVolume *frontLV = new G4LogicalVolume(frontS, fLANEXMat, "FrontLANEX");
+   frontLV->SetVisAttributes(G4Colour::Yellow());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   G4double frontZPos = -airZPos - 120.*mm;
+   G4ThreeVector frontPos = G4ThreeVector(0., 0., frontZPos);
+   G4RotationMatrix *frontRot = new G4RotationMatrix();
+   frontRot->rotateY(45.0*deg);
+
+   G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
+   new G4PVPlacement(frontRot, frontPos, frontLV, "FrontLANEX", motherLV,
+                     false, 0, fCheckOverlap);
+
+}
+
+void ESDetectorConstruction::ConstructConverter()
+{
+   // Gamma converter
+   G4double size = 10.*mm;
+   G4Box *converterS = new G4Box("Converter", size / 2., size / 2., size / 2.);
+   G4LogicalVolume *converterLV = new G4LogicalVolume(converterS, fWindowMat, "Converter");
+   converterLV->SetVisAttributes(G4Colour::Green());
+
+   G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
+   G4double converterZPos = -airZPos + 2000.*mm;
+   G4ThreeVector converterPos = G4ThreeVector(0., 0., converterZPos);
+
+   G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
+   new G4PVPlacement(nullptr, converterPos, converterLV, "Converter", motherLV,
+                     false, 0, fCheckOverlap);
 }
 
 G4LogicalVolume *ESDetectorConstruction::ConstructMagnet()
@@ -292,9 +321,9 @@ void ESDetectorConstruction::ConstructBothDetectors()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    
-   G4double LANEX_W = 200.*mm;
+   G4double LANEX_W = fLANEXW;
    G4double LANEX_L = 2.*m;
-   G4double LANEX_H = 250.*mm + fLANEXT;
+   G4double LANEX_H = 100.*mm + fLANEXT;
 
    G4Box *LANEXVerS = new G4Box("LANEXDetectorV", LANEX_W / 2., LANEX_H / 2., fLANEXT / 2.);
    G4LogicalVolume *LANEXVerLV = new G4LogicalVolume(LANEXVerS, fLANEXMat, "LANEXDetectorV");
@@ -305,16 +334,16 @@ void ESDetectorConstruction::ConstructBothDetectors()
    LANEXHorLV->SetVisAttributes(G4Colour::Yellow());
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
-   G4double LANEXVerZPos = -airZPos + fMagnetL + 1000.*mm + fLANEXT / 2.;// The front face is at z = 2m
-   G4double LANEXVerYPos = 100.*mm - LANEX_H / 2.;// The front face is at z = 2m
-   G4ThreeVector LANEXVerPos = G4ThreeVector(0., LANEXVerYPos, LANEXVerZPos);
-   new G4PVPlacement(nullptr, LANEXVerPos, LANEXVerLV, "LANEXDetectorV", motherLV,
-                     false, 0, fCheckOverlap);
-
    G4double LANEXHorZPos = -airZPos + LANEX_L / 2.;
-   G4double LANEXHorYPos = -150.*mm - fLANEXT / 2.;// The upper face is at y = -150mm
+   G4double LANEXHorYPos = -150.*mm - fLANEXT / 2.;
    G4ThreeVector LANEXHorPos = G4ThreeVector(0., LANEXHorYPos, LANEXHorZPos);
    new G4PVPlacement(nullptr, LANEXHorPos, LANEXHorLV, "LANEXDetectorH", motherLV,
+                     false, 0, fCheckOverlap);
+
+   G4double LANEXVerZPos = -airZPos + fMagnetL + 1000.*mm + fLANEXT / 2.;
+   G4double LANEXVerYPos = -50.*mm - LANEX_H / 2.;
+   G4ThreeVector LANEXVerPos = G4ThreeVector(0., LANEXVerYPos, LANEXVerZPos);
+   new G4PVPlacement(nullptr, LANEXVerPos, LANEXVerLV, "LANEXDetectorV", motherLV,
                      false, 0, fCheckOverlap);
 
 
@@ -382,8 +411,8 @@ void ESDetectorConstruction::ConstructMirror()
 {
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    
-   G4double mirrorT = 2.*mm;
-   G4double mirrorW = 200.*mm;
+   G4double mirrorT = 4.*mm;
+   G4double mirrorW = fLANEXW * sqrt(2.);
    G4double mirrorL = 2.*m;
    G4double AlT = 0.1*mm;
    
@@ -402,7 +431,7 @@ void ESDetectorConstruction::ConstructMirror()
 
    G4double airZPos = (fAirPV->GetTranslation())[2]; // Using ObjectTranslation?
    G4double mirrorZPos = -airZPos + mirrorL / 2.;
-   G4double mirrorYPos = -300.*mm ;// The upper face is at y = -150mm
+   G4double mirrorYPos = -225.*mm ;
    G4ThreeVector mirrorPos = G4ThreeVector(0., mirrorYPos, mirrorZPos);
 
    G4RotationMatrix *mirrorRot = new G4RotationMatrix();
@@ -430,7 +459,9 @@ void ESDetectorConstruction::ConstructSD()
    for(auto &&lv: *lvStore){
       //if(lv->GetName() != "World" && lv->GetName() != "Air")
       //if(lv->GetName() == "Window" || (lv->GetName()).contains("Detector"))
-      if(lv->GetName().contains("LANEX") || lv->GetName().contains("Window"))
+      if(lv->GetName().contains("LANEX") ||
+         lv->GetName().contains("Window") ||
+         lv->GetName().contains("Converter"))
          SetSensitiveDetector(lv->GetName(), SD);
    }
 }

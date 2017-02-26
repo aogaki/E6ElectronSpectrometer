@@ -4,13 +4,10 @@
 #include "ESEventAction.hpp"
 
 
-ESActionInitialization::ESActionInitialization(G4bool useMonoEne, G4double beamEne,
-                                               G4bool useZeroAng, G4bool refFlag)
+ESActionInitialization::ESActionInitialization(BeamState beam, G4double beamEne)
    : G4VUserActionInitialization(),
-     fUseMonoEne(useMonoEne),
-     fBeamEne(beamEne),
-     fUseZeroAng(useZeroAng),
-     fRefFlag(refFlag)
+     fBeamState(beam),
+     fBeamEne(beamEne)
 {}
 
 ESActionInitialization::~ESActionInitialization()
@@ -23,7 +20,7 @@ void ESActionInitialization::BuildForMaster() const
 
 void ESActionInitialization::Build() const
 {
-   SetUserAction(new ESPrimaryGeneratorAction(fUseMonoEne, fBeamEne, fUseZeroAng, fRefFlag));
+   SetUserAction(new ESPrimaryGeneratorAction(fBeamState, fBeamEne));
    SetUserAction(new ESRunAction());
    SetUserAction(new ESEventAction());
 }

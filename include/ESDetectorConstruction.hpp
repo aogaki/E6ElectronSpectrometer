@@ -68,6 +68,7 @@ private:
    G4double fMagnetDepth;
 
    G4double fLANEXT;
+   G4double fLANEXW;
    
    // Magnet
    G4LogicalVolume *ConstructMagnet();
@@ -78,6 +79,10 @@ private:
    void ConstructHorizontalDetectors();
    void ConstructVerticalDetectors();
 
+   void ConstructFront();
+
+   void ConstructConverter();
+   
    // Mirror
    void ConstructMirror();
    

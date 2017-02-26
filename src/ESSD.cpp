@@ -59,6 +59,7 @@ G4bool ESSD::ProcessHits(G4Step *step, G4TouchableHistory */*history*/)
       G4double incidentEnergy = preStepPoint->GetKineticEnergy();
       newHit->SetIncidentEnergy(incidentEnergy);
    }
+   else newHit->SetIncidentEnergy(0.);
    
    G4String vertexName = track->GetLogicalVolumeAtVertex()->GetName();
    newHit->SetVertexName(vertexName);

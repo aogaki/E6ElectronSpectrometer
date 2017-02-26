@@ -1,10 +1,18 @@
 #!/bin/bash
 
-echo "/run/beamOn 1000000" > tmp.mac
+echo "/run/beamOn 100000" > tmp.mac
 
-
-for ene in 0.05 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00
+for front in 0 3
 do
-    ./E6ES -z -e $ene -m tmp.mac
-    hadd -f ene$ene.root result_t*
+    for mirror in 0 1
+    do
+	for ene in 0.5 1 2 3 4 5
+	do
+	    ./E6ES -c 1 -e $ene -p $mirror -d $front -m tmp.mac
+	    hadd -f ene"$ene"mirror"$mirror"det"$front"col1.root result_t*
+
+	    ./E6ES -c 1 -w -e $ene -p $mirror -d $front -m tmp.mac
+	    hadd -f wide1ene"$ene"mirror"$mirror"det"$front"col1.root result_t*
+	done
+    done
 done
