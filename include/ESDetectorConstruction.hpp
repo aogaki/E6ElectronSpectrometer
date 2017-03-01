@@ -31,6 +31,7 @@ public:
 private:
    G4bool fCheckOverlap;
 
+   G4LogicalVolume *fWorldLV;
    G4LogicalVolume *fMagneticFieldLV;
    
    // Materials
@@ -43,6 +44,7 @@ private:
    G4Material *fMagnetMat;
    G4Material *fMirrorGlassMat;
    G4Material *fMirrorAlMat;
+   G4Material *fFoilMat;
    G4bool fVacFlag;
    
    // Geometry parameters
@@ -80,8 +82,8 @@ private:
    void ConstructVerticalDetectors();
 
    void ConstructFront();
-
    void ConstructConverter();
+   void ConstructFoil();
    
    // Mirror
    void ConstructMirror();

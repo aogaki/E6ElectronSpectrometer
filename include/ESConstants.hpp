@@ -18,6 +18,7 @@ enum class BeamState
    Wide,
    Mono,
    MonoZero,
+   MonoWide,
    Reference,
    ZeroAng,
 };

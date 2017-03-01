@@ -35,6 +35,7 @@
 ESDetectorConstruction::ESDetectorConstruction(MirrorState mirrorState, ColliState colliState,
                                                DetState detState, G4bool vacFlag)
    : G4VUserDetectorConstruction(),
+     fWorldLV(nullptr),
      fMagneticFieldLV(nullptr),
      fVacuumMat(nullptr),
      fWindowMat(nullptr),
@@ -44,6 +45,7 @@ ESDetectorConstruction::ESDetectorConstruction(MirrorState mirrorState, ColliSta
      fMagnetMat(nullptr),
      fMirrorGlassMat(nullptr),
      fMirrorAlMat(nullptr),
+     fFoilMat(nullptr),
      fVacFlag(vacFlag),
      fMessenger(nullptr),
      fVacuumPV(nullptr),
@@ -62,21 +64,14 @@ ESDetectorConstruction::ESDetectorConstruction(MirrorState mirrorState, ColliSta
 
 ESDetectorConstruction::~ESDetectorConstruction()
 {
-   delete fVacuumMat;
-   delete fLANEXMat;
-   if(!fVacFlag){
-      delete fWindowMat;
-      delete fAirMat;
-      delete fCollimatorMat;
-      delete fMagnetMat;
-      delete fMirrorGlassMat;
-      delete fMirrorAlMat;
-   }
-   
    delete fMessenger;
+
    delete fVacuumPV;
    delete fWindowPV;
    delete fAirPV;
+
+   delete fWorldLV;
+   //delete fMagneticFieldLV;// this is same as fWorldLV;
 }
 
 void ESDetectorConstruction::DefineMaterials()
@@ -85,20 +80,22 @@ void ESDetectorConstruction::DefineMaterials()
 
    // NIST database materials
    fVacuumMat = manager->FindOrBuildMaterial("G4_Galactic");
-   fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
-   //fLANEXMat = fVacuumMat;
    if(fVacFlag)
-      fWindowMat = fAirMat = fCollimatorMat = fMagnetMat
+      fWindowMat = fAirMat = fCollimatorMat = fLANEXMat = fFoilMat
                  = fMirrorGlassMat = fMirrorAlMat = fVacuumMat;
    else{
       fWindowMat = manager->FindOrBuildMaterial("G4_POLYCARBONATE");
       fAirMat = manager->FindOrBuildMaterial("G4_AIR");
       fCollimatorMat = manager->FindOrBuildMaterial("G4_Pb");
-      fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
       fMirrorGlassMat = manager->FindOrBuildMaterial("G4_GLASS_PLATE");
       fMirrorAlMat = manager->FindOrBuildMaterial("G4_Al");
+      fLANEXMat = manager->FindOrBuildMaterial("G4_GADOLINIUM_OXYSULFIDE");
+      fFoilMat = manager->FindOrBuildMaterial("G4_Al");
    }
+   fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+   //fFoilMat = manager->FindOrBuildMaterial("G4_Al");
    
+   /*
    // Acrylic C5O2H8
    G4Element *eleH  = manager->FindOrBuildElement("H");
    G4Element *eleC  = manager->FindOrBuildElement("C");
@@ -112,9 +109,9 @@ void ESDetectorConstruction::DefineMaterials()
    acrylic->AddElement(eleC, 5);
    acrylic->AddElement(eleO, 2);
    acrylic->AddElement(eleH, 8);
-
+   
    //fWindowMat = acrylic;
-
+   */
 }
 
 void ESDetectorConstruction::DefineGeometries()
@@ -147,15 +144,15 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4double worldZ = 7.*m;
 
    G4Box *worldS = new G4Box("World", worldX / 2., worldY / 2., worldZ / 2.);
-   G4LogicalVolume *worldLV = new G4LogicalVolume(worldS, fVacuumMat, "World");
+   fWorldLV = new G4LogicalVolume(worldS, fVacuumMat, "World");
 
    G4VisAttributes *visAttributes = new G4VisAttributes(G4Colour::White());
    visAttributes->SetVisibility(false);
-   worldLV->SetVisAttributes(visAttributes);
+   fWorldLV->SetVisAttributes(visAttributes);
    fVisAttributes.push_back(visAttributes);
 
    G4VPhysicalVolume *worldPV
-      = new G4PVPlacement(nullptr, G4ThreeVector(), worldLV, "World", 0,
+      = new G4PVPlacement(nullptr, G4ThreeVector(), fWorldLV, "World", 0,
                           false, 0, fCheckOverlap);
 
    // Air layer
@@ -170,7 +167,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    G4double airZPos = fAirT / 2. + fWindowZPos + fWindowT / 2.;
    G4ThreeVector airPos = G4ThreeVector(0., 0., airZPos);
-   fAirPV = new G4PVPlacement(nullptr, airPos, airLV, "Air", worldLV,
+   fAirPV = new G4PVPlacement(nullptr, airPos, airLV, "Air", fWorldLV,
                               false, 0, fCheckOverlap);
 
    // Magnet
@@ -197,7 +194,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    fVisAttributes.push_back(visAttributes);
 
    G4ThreeVector windowPos = G4ThreeVector(0., 0., fWindowZPos);
-   fWindowPV = new G4PVPlacement(nullptr, windowPos, windowLV, "Window", worldLV,
+   fWindowPV = new G4PVPlacement(nullptr, windowPos, windowLV, "Window", fWorldLV,
                                  false, 0, fCheckOverlap);
 
    // Collimator layer
@@ -220,7 +217,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
       
       G4LogicalVolume *colliMotherLV{nullptr};
       if(fColliState == ColliState::InAir) colliMotherLV = airLV;
-      else if(fColliState == ColliState::InVac) colliMotherLV = worldLV;
+      else if(fColliState == ColliState::InVac) colliMotherLV = fWorldLV;
       new G4PVPlacement(nullptr, colliPos, colliLV, "Collimator", colliMotherLV,
                         false, 0, fCheckOverlap);
    }
@@ -239,10 +236,30 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    ConstructConverter();
 
+   ConstructFoil();
    
-   fMagneticFieldLV = worldLV;
+   fMagneticFieldLV = fWorldLV;
    
    return worldPV;
+}
+
+void ESDetectorConstruction::ConstructFoil()
+{
+   // Foil after source
+   G4double foilSize = 100.*mm;
+   G4double foilT = 0.1*mm;
+   G4Box *foilS = new G4Box("Foil", foilSize / 2., foilSize / 2., foilT / 2.);
+   G4LogicalVolume *foilLV = new G4LogicalVolume(foilS, fFoilMat, "Foil");
+   foilLV->SetVisAttributes(G4Colour::White());
+
+   G4double foilZPos = kSourceZPos + 1.*m;
+   G4ThreeVector foilPos = G4ThreeVector(0., 0., foilZPos);
+   G4RotationMatrix *foilRot = new G4RotationMatrix();
+   foilRot->rotateY(45.0*deg);
+
+   new G4PVPlacement(foilRot, foilPos, foilLV, "Foil", fWorldLV,
+                     false, 0, fCheckOverlap);
+
 }
 
 void ESDetectorConstruction::ConstructFront()
@@ -322,8 +339,9 @@ void ESDetectorConstruction::ConstructBothDetectors()
    G4LogicalVolume *motherLV = fAirPV->GetLogicalVolume();
    
    G4double LANEX_W = fLANEXW;
-   G4double LANEX_L = 2.*m;
-   G4double LANEX_H = 100.*mm + fLANEXT;
+   G4double LANEX_L = 1.9*m;
+   //G4double LANEX_H = 100.*mm + fLANEXT;
+   G4double LANEX_H = 200.*mm;
 
    G4Box *LANEXVerS = new G4Box("LANEXDetectorV", LANEX_W / 2., LANEX_H / 2., fLANEXT / 2.);
    G4LogicalVolume *LANEXVerLV = new G4LogicalVolume(LANEXVerS, fLANEXMat, "LANEXDetectorV");

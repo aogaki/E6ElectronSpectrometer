@@ -45,7 +45,7 @@ namespace {
              << " -c [0: no collimator, 1: collimator in air, 2: collimator in vacuum] \n"
              << " -p [0: no mirror, 1: primary beam hit mirror, 2: not hit] \n"
              << " -d [0: real setup of LANEX, 1: large horizontal plane, 2: large vertical plane] \n"
-             << " -r Making reference data for callibration of LANEX position"
+             << " -r Making reference data for callibration of LANEX position\n"
              << " -w Using wide beam (3.5mrad)"
              << G4endl;
    }
@@ -81,6 +81,7 @@ int main(int argc, char **argv)
    G4bool vacFlag = false;
    G4double beamEne = 0.;
    G4bool zeroAngFlag = false;
+   G4bool wideFlag = false;
    ColliState colliState = ColliState::No;
    MirrorState mirrorState = MirrorState::No;
    DetState detState = DetState::Real;
@@ -91,8 +92,10 @@ int main(int argc, char **argv)
          macro = argv[++i];
       else if (G4String(argv[i]) == "-a")
          showAll = true;
-      else if (G4String(argv[i]) == "-w")
+      else if (G4String(argv[i]) == "-w"){
          beamState = BeamState::Wide;
+         wideFlag = true;
+      }
       else if (G4String(argv[i]) == "-e"){
          beamState = BeamState::Mono;
          beamEne = std::stod(argv[++i]);
@@ -145,6 +148,7 @@ int main(int argc, char **argv)
    }
 
    if(zeroAngFlag == true && beamEne > 0.) beamState = BeamState::MonoZero;
+   if(wideFlag == true && beamEne > 0.) beamState = BeamState::MonoWide;
    
    // Choose the Random engine
    // Need both?

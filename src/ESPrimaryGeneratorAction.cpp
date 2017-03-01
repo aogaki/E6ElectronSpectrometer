@@ -55,7 +55,7 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(BeamState beam, G4double beam
    gRandom->SetSeed(seed);
    
    fZPosition = kSourceZPos;
-   if(fBeamState == BeamState::Wide) fThetaMax = 3.5*mrad;
+   if(fBeamState == BeamState::Wide || fBeamState == BeamState::MonoWide) fThetaMax = 3.5*mrad;
    //fThetaMax = atan((kMagnetGap / 2.) / -kSourceZPos);
    else fThetaMax = 1.5*mrad; // zero angle and reference are set later
    
@@ -71,7 +71,7 @@ ESPrimaryGeneratorAction::ESPrimaryGeneratorAction(BeamState beam, G4double beam
    fParticleGun->SetParticleMomentumDirection(fParVec);
    fParticleGun->SetParticleEnergy(fBeamEne);
 
-   if(fBeamState == BeamState::Mono || fBeamState == BeamState::MonoZero)
+   if(fBeamState == BeamState::Mono || fBeamState == BeamState::MonoZero || fBeamState == BeamState::MonoWide)
       GunPointer = &ESPrimaryGeneratorAction::MonoEneGun;
    else if(fBeamState == BeamState::Reference) GunPointer = &ESPrimaryGeneratorAction::ReferenceGun;
    else GunPointer = &ESPrimaryGeneratorAction::UniformGun;
@@ -114,7 +114,7 @@ void ESPrimaryGeneratorAction::UniformGun()
 
 void ESPrimaryGeneratorAction::ReferenceGun()
 {
-   fBeamEne += 100.*MeV;
+   fBeamEne += 10.*MeV;
 }
 
 void ESPrimaryGeneratorAction::NamGun()
