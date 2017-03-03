@@ -93,7 +93,7 @@ void ESDetectorConstruction::DefineMaterials()
       fFoilMat = manager->FindOrBuildMaterial("G4_Al");
    }
    fMagnetMat = manager->FindOrBuildMaterial("G4_STAINLESS-STEEL");
-   //fFoilMat = manager->FindOrBuildMaterial("G4_Al");
+   fFoilMat = manager->FindOrBuildMaterial("G4_Al");
    
    /*
    // Acrylic C5O2H8
@@ -236,7 +236,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    ConstructConverter();
 
-   ConstructFoil();
+   //ConstructFoil();
    
    fMagneticFieldLV = fWorldLV;
    
@@ -431,7 +431,7 @@ void ESDetectorConstruction::ConstructMirror()
    
    G4double mirrorT = 4.*mm;
    G4double mirrorW = fLANEXW * sqrt(2.);
-   G4double mirrorL = 2.*m;
+   G4double mirrorL = 1.9*m;
    G4double AlT = 0.1*mm;
    
    G4Box *mirrorS = new G4Box("Mirror", mirrorW / 2., mirrorT / 2., mirrorL / 2.);
