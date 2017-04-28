@@ -179,6 +179,7 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
    G4double magnetZPos = -airZPos + fMagnetL / 2.;
    // The Y center of magnet is center of baseBox
    G4double magnetYPos = (fMagnetH) / 4. - fMagnetDepth / 2.;
+   //magnetYPos -= 25.*mm;
    G4ThreeVector magnetPos = G4ThreeVector(0., magnetYPos, magnetZPos);
    new G4PVPlacement(nullptr, magnetPos, magnetLV, "Magnet", airLV,
                      false, 0, fCheckOverlap);   
