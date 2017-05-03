@@ -218,7 +218,7 @@ int main(int argc, char **argv)
       UImanager->ApplyCommand("/control/execute init.mac");
 #endif
       if (ui->IsGUI()) {
-         UImanager->ApplyCommand("/control/execute icons.mac");
+         //UImanager->ApplyCommand("/control/execute icons.mac");
       }
       ui->SessionStart();
       delete ui;

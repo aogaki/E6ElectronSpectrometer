@@ -4,7 +4,7 @@
 # It has no effect with G4UIterminal.
 
 # disable default icons
-/gui/defaultIcons false
+#/gui/defaultIcons false
 
 # open/save icons
 /gui/addIcon "Open macro file" open /control/execute
