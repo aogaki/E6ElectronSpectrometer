@@ -123,7 +123,7 @@ void ESDetectorConstruction::DefineGeometries()
    fWindowZPos = kSourceZPos + kSourceToWindow - fWindowT / 2.;
 
    fColliT = 100.*mm;
-   fColliHole = 4.*mm;
+   fColliHole = 3.*mm;
    if(fColliState == ColliState::InVac) fColliHole = 3.5*mm;
 
    fMagnetH = 381.*mm;  // along Y axis
@@ -200,8 +200,10 @@ G4VPhysicalVolume *ESDetectorConstruction::Construct()
 
    // Collimator layer
    if(fColliState != ColliState::No){
-      G4double colliW = airW;
-      G4double colliH = airH;
+      //G4double colliW = airW;
+      //G4double colliH = airH;
+      G4double colliW = 10.*cm;
+      G4double colliH = 10.*cm;
 
       G4Box *plateS = new G4Box("Plate", colliW / 2., colliH / 2., fColliT / 2.);
       G4Tubs *holeS = new G4Tubs("Hole", 0., fColliHole / 2., fColliT / 2., 0., 2*CLHEP::pi);

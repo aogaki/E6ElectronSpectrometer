@@ -175,9 +175,9 @@ int main(int argc, char **argv)
 
    // Physics list
    //G4VModularPhysicsList *physicsList = new FTFP_BERT();
-   //G4VModularPhysicsList *physicsList = new QGSP_BERT_HP();
+   G4VModularPhysicsList *physicsList = new QGSP_BERT_HP();
    //G4VModularPhysicsList *physicsList = new QGSP_BIC_HP();
-   G4VModularPhysicsList *physicsList = new Shielding();
+   //G4VModularPhysicsList *physicsList = new Shielding();
    //G4VModularPhysicsList *physicsList = new ESPhysicsList();
    physicsList->SetVerboseLevel(0);
    runManager->SetUserInitialization(physicsList);

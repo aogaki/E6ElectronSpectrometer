@@ -5,66 +5,64 @@
 
 #include "ESRunAction.hpp"
 
+ESRunAction::ESRunAction() : G4UserRunAction()
+{
+  G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
+  anaMan->SetVerboseLevel(1);
+  G4cout << "Using " << anaMan->GetType() << " analysis manager" << G4endl;
+  G4String fileName = "result";
+  anaMan->SetFileName(fileName);
 
-ESRunAction::ESRunAction()
-   : G4UserRunAction()
-{}
+  // Ntuple
+  anaMan->CreateNtuple("ES", "ESM study");
+  anaMan->CreateNtupleIColumn("EventID");
+  anaMan->CreateNtupleIColumn("TrackID");
+  anaMan->CreateNtupleIColumn("PDGCode");
+  anaMan->CreateNtupleSColumn("VolumeName");
 
-ESRunAction::~ESRunAction()
-{}
+  anaMan->CreateNtupleDColumn("KineticEnergy");
+
+  anaMan->CreateNtupleDColumn("x");
+  anaMan->CreateNtupleDColumn("y");
+  anaMan->CreateNtupleDColumn("z");
+
+  anaMan->CreateNtupleDColumn("vx");
+  anaMan->CreateNtupleDColumn("vy");
+  anaMan->CreateNtupleDColumn("vz");
+
+  anaMan->CreateNtupleSColumn("VertexName");
+
+  anaMan->CreateNtupleDColumn("DepositEnergy");
+
+  anaMan->CreateNtupleDColumn("IncidentEnergy");
+
+  anaMan->CreateNtupleIColumn("IsLast");
+
+  anaMan->CreateNtupleDColumn("Time");
+  anaMan->FinishNtuple();
+
+  // Init parameters
+  anaMan->CreateNtuple("InitPar", "Initial Parameters");
+  anaMan->CreateNtupleIColumn("EventID");
+  anaMan->CreateNtupleIColumn("PDGCode");
+  anaMan->CreateNtupleDColumn("KineticEnergy");
+  anaMan->CreateNtupleDColumn("vx");
+  anaMan->CreateNtupleDColumn("vy");
+  anaMan->CreateNtupleDColumn("vz");
+  anaMan->FinishNtuple();
+}
+
+ESRunAction::~ESRunAction() { delete G4AnalysisManager::Instance(); }
 
 void ESRunAction::BeginOfRunAction(const G4Run *)
 {
-   G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
-   anaMan->SetVerboseLevel(1);
-   G4cout << "Using " << anaMan->GetType()
-          << " analysis manager" << G4endl;
-   G4String fileName = "result";
-   anaMan->OpenFile(fileName);
-
-   // Ntuple
-   anaMan->CreateNtuple("ES", "ESM study");
-   anaMan->CreateNtupleIColumn(0, "EventID");
-   anaMan->CreateNtupleIColumn(0, "TrackID");
-   anaMan->CreateNtupleIColumn(0, "PDGCode");
-   anaMan->CreateNtupleSColumn(0, "VolumeName");
-   
-   anaMan->CreateNtupleDColumn(0, "KineticEnergy");
-   
-   anaMan->CreateNtupleDColumn(0, "x");
-   anaMan->CreateNtupleDColumn(0, "y");
-   anaMan->CreateNtupleDColumn(0, "z");
-
-   anaMan->CreateNtupleDColumn(0, "vx");
-   anaMan->CreateNtupleDColumn(0, "vy");
-   anaMan->CreateNtupleDColumn(0, "vz");
-
-   anaMan->CreateNtupleSColumn(0, "VertexName");
-
-   anaMan->CreateNtupleDColumn(0, "DepositEnergy");
-
-   anaMan->CreateNtupleDColumn(0, "IncidentEnergy");
-   
-   anaMan->CreateNtupleIColumn(0, "IsLast");
-
-   anaMan->CreateNtupleDColumn(0, "Time");
-
-   // Init parameters
-   anaMan->CreateNtuple("InitPar", "Initial Parameters");
-   anaMan->CreateNtupleIColumn(1, "EventID");
-   anaMan->CreateNtupleIColumn(1, "PDGCode");
-   anaMan->CreateNtupleDColumn(1, "KineticEnergy");
-   anaMan->CreateNtupleDColumn(1, "vx");
-   anaMan->CreateNtupleDColumn(1, "vy");
-   anaMan->CreateNtupleDColumn(1, "vz");
-
-   anaMan->FinishNtuple();
+  G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
+  anaMan->OpenFile();
 }
 
 void ESRunAction::EndOfRunAction(const G4Run *)
 {
-   G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
-   anaMan->Write();
-   anaMan->CloseFile();
+  G4AnalysisManager *anaMan = G4AnalysisManager::Instance();
+  anaMan->Write();
+  anaMan->CloseFile();
 }
-
